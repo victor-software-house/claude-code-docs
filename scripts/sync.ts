@@ -5,10 +5,48 @@ import ky from "ky";
 const LLMS_TXT_URL = "https://code.claude.com/docs/llms.txt";
 const DOCS_DIR = join(import.meta.dirname, "..", "docs", "en");
 const URL_PATTERN = /https:\/\/code\.claude\.com\/docs\/en\/[\w-]+\.md/g;
+const client = ky.create({ retry: { limit: 3 } });
+
+type SyncResult =
+	| { status: "added" | "updated" | "unchanged"; filename: string }
+	| { status: "skipped"; filename: string; reason: string };
+
+async function fetchMarkdown(url: string): Promise<string | null> {
+	const response = await client(url);
+	const contentType = response.headers.get("content-type") ?? "";
+
+	if (!contentType.includes("text/html")) return response.text();
+
+	// HTML response (e.g. GitHub blob view) -- follow x-raw-download header
+	const rawUrl = response.headers.get("x-raw-download");
+	return rawUrl ? client(rawUrl).text() : null;
+}
+
+async function syncPage(
+	url: string,
+	existingFiles: ReadonlySet<string>,
+): Promise<SyncResult> {
+	const filename = basename(url);
+	const filepath = join(DOCS_DIR, filename);
+	const content = await fetchMarkdown(url);
+
+	if (content === null) {
+		return { status: "skipped", filename, reason: "HTML without raw URL" };
+	}
+
+	const file = Bun.file(filepath);
+	const existing = (await file.exists()) ? await file.text() : "";
+
+	if (content === existing) return { status: "unchanged", filename };
+
+	await Bun.write(filepath, content);
+	const status = existingFiles.has(filename) ? "updated" : "added";
+	return { status, filename } as const;
+}
 
 async function main() {
 	console.log("Fetching llms.txt manifest...");
-	const manifest = await ky(LLMS_TXT_URL, { retry: { limit: 3 } }).text();
+	const manifest = await client(LLMS_TXT_URL).text();
 	const urls = manifest.match(URL_PATTERN);
 
 	if (!urls || urls.length === 0) {
@@ -21,79 +59,45 @@ async function main() {
 
 	mkdirSync(DOCS_DIR, { recursive: true });
 
-	const existingFiles = new Set(
+	const existingFiles: ReadonlySet<string> = new Set(
 		readdirSync(DOCS_DIR).filter((f: string) => f.endsWith(".md")),
 	);
-	const expectedFiles = new Set(uniqueUrls.map((u: string) => basename(u)));
+	const expectedFiles: ReadonlySet<string> = new Set(
+		uniqueUrls.map((u: string) => basename(u)),
+	);
 
-	let added = 0;
-	let updated = 0;
-	let unchanged = 0;
-	const skipped: string[] = [];
 	let done = 0;
 	const total = uniqueUrls.length;
 
-	const downloads = uniqueUrls.map(async (url: string) => {
-		const filename = basename(url);
-		const filepath = join(DOCS_DIR, filename);
-
-		let content: string;
-		const response = await ky(url, { retry: { limit: 3 } });
-		const contentType = response.headers.get("content-type") ?? "";
-
-		if (contentType.includes("text/html")) {
-			// Some URLs return HTML (GitHub blob view) instead of raw markdown.
-			// Follow the x-raw-download header to get the actual content.
-			const rawUrl = response.headers.get("x-raw-download");
-			if (rawUrl) {
-				content = await ky(rawUrl, { retry: { limit: 3 } }).text();
-			} else {
-				skipped.push(filename);
-				done++;
-				process.stdout.write(
-					`\r  [${done}/${total}] ${filename} (skipped: HTML, no raw URL)`,
-				);
-				return;
-			}
-		} else {
-			content = await response.text();
-		}
-
-		const file = Bun.file(filepath);
-		const existing = (await file.exists()) ? await file.text() : "";
-
-		if (content === existing) {
-			unchanged++;
-		} else {
-			await Bun.write(filepath, content);
-			if (existingFiles.has(filename)) {
-				updated++;
-			} else {
-				added++;
-			}
-		}
-
-		done++;
-		process.stdout.write(`\r  [${done}/${total}] ${filename}`);
-	});
-
-	await Promise.all(downloads);
+	const results = await Promise.all(
+		uniqueUrls.map(async (url: string) => {
+			const result = await syncPage(url, existingFiles);
+			done++;
+			const suffix =
+				result.status === "skipped" ? ` (skipped: ${result.reason})` : "";
+			process.stdout.write(
+				`\r  [${done}/${total}] ${result.filename}${suffix}`,
+			);
+			return result;
+		}),
+	);
 	process.stdout.write("\n");
 
 	// Remove orphaned files
-	let removed = 0;
-	for (const file of existingFiles) {
-		if (!expectedFiles.has(file)) {
-			Bun.file(join(DOCS_DIR, file)).delete();
-			removed++;
-		}
+	const orphans = [...existingFiles].filter((f) => !expectedFiles.has(f));
+	for (const file of orphans) {
+		Bun.file(join(DOCS_DIR, file)).delete();
 	}
 
+	const count = (status: SyncResult["status"]) =>
+		results.filter((r) => r.status === status).length;
+	const skipped = results.filter((r) => r.status === "skipped");
+
 	console.log(
-		`Done: ${added} added, ${updated} updated, ${removed} removed, ${unchanged} unchanged, ${skipped.length} skipped`,
+		`Done: ${count("added")} added, ${count("updated")} updated, ${orphans.length} removed, ${count("unchanged")} unchanged, ${skipped.length} skipped`,
 	);
 	if (skipped.length > 0) {
-		console.log(`Skipped (not markdown): ${skipped.join(", ")}`);
+		console.log(`Skipped: ${skipped.map((r) => r.filename).join(", ")}`);
 	}
 }
 
