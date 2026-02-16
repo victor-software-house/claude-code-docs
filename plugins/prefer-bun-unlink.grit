@@ -1,0 +1,3 @@
+`unlinkSync($path)` where {
+	register_diagnostic(span=$path, message="Use `Bun.file($path).delete()` instead of `unlinkSync()`", severity="warn")
+}

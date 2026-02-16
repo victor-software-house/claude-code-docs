@@ -1,5 +1,12 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.4.0/schema.json",
+	"plugins": [
+		"./plugins/prefer-bun-file.grit",
+		"./plugins/prefer-bun-write.grit",
+		"./plugins/prefer-bun-spawn.grit",
+		"./plugins/prefer-bun-exists.grit",
+		"./plugins/prefer-bun-unlink.grit"
+	],
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",

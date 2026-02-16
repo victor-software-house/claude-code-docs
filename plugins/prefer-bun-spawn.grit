@@ -1,0 +1,3 @@
+`execSync($cmd, $opts)` where {
+	register_diagnostic(span=$cmd, message="Use `Bun.spawnSync()` instead of `execSync()`", severity="warn")
+}
