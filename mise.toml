@@ -5,10 +5,10 @@ bun = "1.3.9"
 description = "Download latest docs from code.claude.com"
 run = "bun run scripts/sync.ts"
 
-[tasks.changelog]
-description = "Generate changelog from git diff"
-run = "bun run scripts/changelog.ts"
+[tasks.release]
+description = "Commit changes and bump version"
+run = "HUSKY=0 bun run scripts/commit-changes.ts && HUSKY=0 bunx commit-and-tag-version"
 
 [tasks.all]
-description = "Sync docs and generate changelog"
-depends = ["sync", "changelog"]
+description = "Sync docs and release"
+depends = ["sync", "release"]

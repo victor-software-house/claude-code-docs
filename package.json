@@ -1,10 +1,14 @@
 {
   "name": "claude-code-docs",
-  "module": "index.ts",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
+    "@types/bun": "latest",
+    "commit-and-tag-version": "^12.6.1",
+    "husky": "^9.1.7"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -12,5 +16,8 @@
   "dependencies": {
     "ky": "^1.14.3",
     "p-queue": "^9.1.0"
+  },
+  "scripts": {
+    "prepare": "husky"
   }
 }

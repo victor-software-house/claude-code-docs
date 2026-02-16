@@ -9,11 +9,11 @@ Updated daily via GitHub Actions.
 
 1. Fetches the page manifest from `llms.txt`
 2. Downloads all markdown pages
-3. Commits changes with a dated version
-4. Auto-generates `CHANGELOG.md` from diffs
+3. Creates conventional commits per change type (`feat:`, `fix:`, `feat!:`)
+4. Bumps semver, generates `CHANGELOG.md`, and tags the release
 
 ## Run locally
 
     mise run sync        # Download latest docs
-    mise run changelog   # Generate changelog from changes
+    mise run release     # Commit changes + bump version
     mise run all         # Both

@@ -8,23 +8,23 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      HUSKY: "0"
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.9"
       - run: bun install --frozen-lockfile
       - run: bun run scripts/sync.ts
-      - run: bun run scripts/changelog.ts
-      - name: Commit and push
+      - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No changes detected"
-          else
-            VERSION=$(cat VERSION)
-            git commit -m "docs: sync ${VERSION}"
-            git push
-          fi
+      - name: Commit and release
+        run: |
+          bun run scripts/commit-changes.ts || exit 0
+          bunx commit-and-tag-version
+          git push --follow-tags
