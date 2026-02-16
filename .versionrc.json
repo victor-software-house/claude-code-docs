@@ -1,15 +1,15 @@
 {
-  "types": [
-    { "type": "feat", "section": "Added" },
-    { "type": "fix", "section": "Updated" },
-    { "type": "chore", "hidden": true },
-    { "type": "docs", "hidden": true },
-    { "type": "style", "hidden": true },
-    { "type": "refactor", "hidden": true },
-    { "type": "perf", "hidden": true },
-    { "type": "test", "hidden": true },
-    { "type": "ci", "hidden": true }
-  ],
-  "commitUrlFormat": "https://github.com/victor-software-house/claude-code-docs/commit/{{hash}}",
-  "compareUrlFormat": "https://github.com/victor-software-house/claude-code-docs/compare/{{previousTag}}...{{currentTag}}"
+	"types": [
+		{ "type": "feat", "section": "Added" },
+		{ "type": "fix", "section": "Updated" },
+		{ "type": "chore", "hidden": true },
+		{ "type": "docs", "hidden": true },
+		{ "type": "style", "hidden": true },
+		{ "type": "refactor", "hidden": true },
+		{ "type": "perf", "hidden": true },
+		{ "type": "test", "hidden": true },
+		{ "type": "ci", "hidden": true }
+	],
+	"commitUrlFormat": "https://github.com/victor-software-house/claude-code-docs/commit/{{hash}}",
+	"compareUrlFormat": "https://github.com/victor-software-house/claude-code-docs/compare/{{previousTag}}...{{currentTag}}"
 }
