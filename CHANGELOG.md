@@ -8,7 +8,3 @@ All notable changes to this project will be documented in this file. See [commit
 ### Updated
 
 * update changelog.md ([da07496](https://github.com/victor-software-house/claude-code-docs/commit/da074969af680edb42abfbf7ed6e056e42722518))
-
-# Changelog
-
-All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
