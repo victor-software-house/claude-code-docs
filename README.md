@@ -12,8 +12,21 @@ Updated daily via GitHub Actions.
 3. Creates conventional commits per change type (`feat:`, `fix:`, `feat!:`)
 4. Bumps semver, generates `CHANGELOG.md`, and tags the release
 
+## Semver mapping
+
+- **patch** (`fix:`): doc content updated
+- **minor** (`feat:`): new page added
+- **major** (`feat!:`): page removed
+
 ## Run locally
 
     mise run sync        # Download latest docs
+    mise run check       # Lint and format check
     mise run release     # Commit changes + bump version
-    mise run all         # Both
+    mise run all         # Sync + release
+
+## Roadmap
+
+- [ ] Migrate to CLI structure with `citty` + `consola` (subcommands, progress bars, colored output)
+- [ ] Show content diff summary in CI logs (lines changed per file)
+- [ ] GitHub Releases with changelog body on each tag
