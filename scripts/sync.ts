@@ -1,75 +1,70 @@
-import ky from "ky";
-import PQueue from "p-queue";
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
+import ky from "ky";
 
 const LLMS_TXT_URL = "https://code.claude.com/docs/llms.txt";
 const DOCS_DIR = join(import.meta.dirname, "..", "docs", "en");
 const URL_PATTERN = /https:\/\/code\.claude\.com\/docs\/en\/[\w-]+\.md/g;
 
 async function main() {
-  console.log("Fetching llms.txt manifest...");
-  const manifest = await ky(LLMS_TXT_URL, { retry: { limit: 3 } }).text();
-  const urls = manifest.match(URL_PATTERN);
+	console.log("Fetching llms.txt manifest...");
+	const manifest = await ky(LLMS_TXT_URL, { retry: { limit: 3 } }).text();
+	const urls = manifest.match(URL_PATTERN);
 
-  if (!urls || urls.length === 0) {
-    console.error("No markdown URLs found in llms.txt");
-    process.exit(1);
-  }
+	if (!urls || urls.length === 0) {
+		console.error("No markdown URLs found in llms.txt");
+		process.exit(1);
+	}
 
-  const uniqueUrls = [...new Set(urls)];
-  console.log(`Found ${uniqueUrls.length} pages`);
+	const uniqueUrls = [...new Set(urls)];
+	console.log(`Found ${uniqueUrls.length} pages`);
 
-  mkdirSync(DOCS_DIR, { recursive: true });
+	mkdirSync(DOCS_DIR, { recursive: true });
 
-  const existingFiles = new Set(
-    readdirSync(DOCS_DIR).filter((f) => f.endsWith(".md"))
-  );
-  const expectedFiles = new Set(uniqueUrls.map((u: string) => basename(u)));
+	const existingFiles = new Set(
+		readdirSync(DOCS_DIR).filter((f: string) => f.endsWith(".md")),
+	);
+	const expectedFiles = new Set(uniqueUrls.map((u: string) => basename(u)));
 
-  const queue = new PQueue({ concurrency: 10 });
-  let added = 0;
-  let updated = 0;
-  let unchanged = 0;
+	let added = 0;
+	let updated = 0;
+	let unchanged = 0;
 
-  const downloads = uniqueUrls.map((url) =>
-    queue.add(async () => {
-      const filename = basename(url);
-      const filepath = join(DOCS_DIR, filename);
+	const downloads = uniqueUrls.map(async (url: string) => {
+		const filename = basename(url);
+		const filepath = join(DOCS_DIR, filename);
 
-      const content = await ky(url, { retry: { limit: 3 } }).text();
+		const content = await ky(url, { retry: { limit: 3 } }).text();
 
-      let existing = "";
-      if (existsSync(filepath)) {
-        existing = readFileSync(filepath, "utf-8");
-      }
+		const file = Bun.file(filepath);
+		const existing = (await file.exists()) ? await file.text() : "";
 
-      if (content === existing) {
-        unchanged++;
-      } else if (existingFiles.has(filename)) {
-        writeFileSync(filepath, content);
-        updated++;
-      } else {
-        writeFileSync(filepath, content);
-        added++;
-      }
-    })
-  );
+		if (content === existing) {
+			unchanged++;
+		} else {
+			await Bun.write(filepath, content);
+			if (existingFiles.has(filename)) {
+				updated++;
+			} else {
+				added++;
+			}
+		}
+	});
 
-  await Promise.all(downloads);
+	await Promise.all(downloads);
 
-  // Remove orphaned files
-  let removed = 0;
-  for (const file of existingFiles) {
-    if (!expectedFiles.has(file)) {
-      unlinkSync(join(DOCS_DIR, file));
-      removed++;
-    }
-  }
+	// Remove orphaned files
+	let removed = 0;
+	for (const file of existingFiles) {
+		if (!expectedFiles.has(file)) {
+			Bun.file(join(DOCS_DIR, file)).delete();
+			removed++;
+		}
+	}
 
-  console.log(
-    `Done: ${added} added, ${updated} updated, ${removed} removed, ${unchanged} unchanged`
-  );
+	console.log(
+		`Done: ${added} added, ${updated} updated, ${removed} removed, ${unchanged} unchanged`,
+	);
 }
 
 main();

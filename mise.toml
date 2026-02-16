@@ -1,6 +1,10 @@
 [tools]
 bun = "1.3.9"
 
+[tasks.check]
+description = "Lint and format check"
+run = "bunx biome check scripts/"
+
 [tasks.sync]
 description = "Download latest docs from code.claude.com"
 run = "bun run scripts/sync.ts"
