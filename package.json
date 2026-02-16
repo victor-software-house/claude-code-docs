@@ -1,0 +1,16 @@
+{
+  "name": "claude-code-docs",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "ky": "^1.14.3",
+    "p-queue": "^9.1.0"
+  }
+}

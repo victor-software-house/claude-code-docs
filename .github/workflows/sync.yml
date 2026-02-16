@@ -1,0 +1,26 @@
+name: Sync Claude Code Docs
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run scripts/sync.ts
+      - run: bun run scripts/changelog.ts
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes detected"
+          else
+            VERSION=$(cat VERSION)
+            git commit -m "docs: sync ${VERSION}"
+            git push
+          fi

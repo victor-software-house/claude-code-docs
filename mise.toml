@@ -1,0 +1,14 @@
+[tools]
+bun = "latest"
+
+[tasks.sync]
+description = "Download latest docs from code.claude.com"
+run = "bun run scripts/sync.ts"
+
+[tasks.changelog]
+description = "Generate changelog from git diff"
+run = "bun run scripts/changelog.ts"
+
+[tasks.all]
+description = "Sync docs and generate changelog"
+depends = ["sync", "changelog"]
