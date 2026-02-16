@@ -29,6 +29,8 @@ async function main() {
 	let added = 0;
 	let updated = 0;
 	let unchanged = 0;
+	let done = 0;
+	const total = uniqueUrls.length;
 
 	const downloads = uniqueUrls.map(async (url: string) => {
 		const filename = basename(url);
@@ -49,9 +51,13 @@ async function main() {
 				added++;
 			}
 		}
+
+		done++;
+		process.stdout.write(`\r  [${done}/${total}] ${filename}`);
 	});
 
 	await Promise.all(downloads);
+	process.stdout.write("\n");
 
 	// Remove orphaned files
 	let removed = 0;
