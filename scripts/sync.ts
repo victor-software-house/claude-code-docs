@@ -37,18 +37,26 @@ async function main() {
 		const filename = basename(url);
 		const filepath = join(DOCS_DIR, filename);
 
+		let content: string;
 		const response = await ky(url, { retry: { limit: 3 } });
 		const contentType = response.headers.get("content-type") ?? "";
-		const content = await response.text();
 
-		// Skip non-markdown responses (some URLs return HTML instead of raw md)
-		if (contentType.includes("text/html") || content.startsWith("<!DOCTYPE")) {
-			skipped.push(filename);
-			done++;
-			process.stdout.write(
-				`\r  [${done}/${total}] ${filename} (skipped: not markdown)`,
-			);
-			return;
+		if (contentType.includes("text/html")) {
+			// Some URLs return HTML (GitHub blob view) instead of raw markdown.
+			// Follow the x-raw-download header to get the actual content.
+			const rawUrl = response.headers.get("x-raw-download");
+			if (rawUrl) {
+				content = await ky(rawUrl, { retry: { limit: 3 } }).text();
+			} else {
+				skipped.push(filename);
+				done++;
+				process.stdout.write(
+					`\r  [${done}/${total}] ${filename} (skipped: HTML, no raw URL)`,
+				);
+				return;
+			}
+		} else {
+			content = await response.text();
 		}
 
 		const file = Bun.file(filepath);
