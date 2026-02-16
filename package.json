@@ -15,6 +15,7 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
+		"eta": "^4.5.1",
 		"ky": "^1.14.3"
 	},
 	"scripts": {

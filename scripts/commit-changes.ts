@@ -1,4 +1,6 @@
 import { basename, join } from "node:path";
+import { render, writeSummary } from "./render.ts";
+import type { CommitSummary } from "./types.ts";
 
 const ROOT = join(import.meta.dirname, "..");
 
@@ -13,21 +15,20 @@ function run(cmd: string[]): string {
 }
 
 function diffStat(filepath: string): string {
-	// Get insertions/deletions for a modified file
 	const stat = run(["git", "diff", "--numstat", "--", filepath]);
 	if (!stat) return "";
 	const parts = stat.split("\t");
-	const ins = parts[0];
-	const del = parts[1];
-	return `(+${ins} -${del})`;
+	return `(+${parts[0]} -${parts[1]})`;
 }
 
-function getChanges() {
+function getChanges(): CommitSummary {
 	const output = run(["git", "status", "--porcelain", "--", "docs/"]);
-	if (!output) return { added: [], modified: [], deleted: [] };
+	if (!output) {
+		return { added: [], modified: [], deleted: [], hasChanges: false };
+	}
 
 	const added: string[] = [];
-	const modified: string[] = [];
+	const modified: { filename: string; stat: string }[] = [];
 	const deleted: string[] = [];
 
 	for (const line of output.split("\n")) {
@@ -36,27 +37,39 @@ function getChanges() {
 		const filename = basename(filepath);
 
 		if (status === "??" || status === "A") added.push(filename);
-		else if (status === "M") modified.push(filename);
+		else if (status === "M")
+			modified.push({ filename, stat: diffStat(`docs/en/${filename}`) });
 		else if (status === "D") deleted.push(filename);
 	}
 
-	return { added, modified, deleted };
+	return {
+		added,
+		modified,
+		deleted,
+		hasChanges: added.length > 0 || modified.length > 0 || deleted.length > 0,
+	};
 }
 
-const { added, modified, deleted } = getChanges();
+const summary = getChanges();
 
-if (added.length === 0 && modified.length === 0 && deleted.length === 0) {
+const markdown = render("commit-summary", summary);
+writeSummary(markdown);
+
+if (!summary.hasChanges) {
 	console.log("No doc changes to commit");
-	process.exit(0);
+	process.exit(2);
 }
 
 // Stage and commit each change type separately so commit-and-tag-version
 // can derive the correct semver bump and changelog sections.
 
-if (deleted.length > 0) {
-	for (const f of deleted) run(["git", "add", "--", `docs/en/${f}`]);
-	const label = deleted.length === 1 ? deleted[0] : `${deleted.length} pages`;
-	const body = deleted.map((f) => `- ${f}`).join("\n");
+if (summary.deleted.length > 0) {
+	for (const f of summary.deleted) run(["git", "add", "--", `docs/en/${f}`]);
+	const label =
+		summary.deleted.length === 1
+			? summary.deleted[0]
+			: `${summary.deleted.length} pages`;
+	const body = summary.deleted.map((f) => `- ${f}`).join("\n");
 	run([
 		"git",
 		"commit",
@@ -65,24 +78,31 @@ if (deleted.length > 0) {
 		"-m",
 		`BREAKING CHANGE: documentation pages removed\n\n${body}`,
 	]);
-	console.log(`Committed ${deleted.length} deleted`);
+	console.log(`Committed ${summary.deleted.length} deleted`);
 }
 
-if (added.length > 0) {
-	for (const f of added) run(["git", "add", "--", `docs/en/${f}`]);
-	const label = added.length === 1 ? added[0] : `${added.length} new pages`;
-	const body = added.map((f) => `- ${f}`).join("\n");
-	run(["git", "commit", "-m", `feat: add ${label}`, "-m", body]);
-	console.log(`Committed ${added.length} added`);
-}
-
-if (modified.length > 0) {
-	for (const f of modified) run(["git", "add", "--", `docs/en/${f}`]);
+if (summary.added.length > 0) {
+	for (const f of summary.added) run(["git", "add", "--", `docs/en/${f}`]);
 	const label =
-		modified.length === 1 ? modified[0] : `${modified.length} pages`;
-	const body = modified
-		.map((f) => `- ${f} ${diffStat(`docs/en/${f}`)}`)
+		summary.added.length === 1
+			? summary.added[0]
+			: `${summary.added.length} new pages`;
+	const body = summary.added.map((f) => `- ${f}`).join("\n");
+	run(["git", "commit", "-m", `feat: add ${label}`, "-m", body]);
+	console.log(`Committed ${summary.added.length} added`);
+}
+
+if (summary.modified.length > 0) {
+	for (const m of summary.modified)
+		run(["git", "add", "--", `docs/en/${m.filename}`]);
+	const first = summary.modified[0];
+	const label =
+		summary.modified.length === 1 && first
+			? first.filename
+			: `${summary.modified.length} pages`;
+	const body = summary.modified
+		.map((m) => `- ${m.filename} ${m.stat}`)
 		.join("\n");
 	run(["git", "commit", "-m", `fix: update ${label}`, "-m", body]);
-	console.log(`Committed ${modified.length} modified`);
+	console.log(`Committed ${summary.modified.length} modified`);
 }

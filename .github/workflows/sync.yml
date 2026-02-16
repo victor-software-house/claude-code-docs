@@ -8,6 +8,8 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.commit.outputs.has_changes }}
     env:
       HUSKY: "0"
     steps:
@@ -18,13 +20,38 @@ jobs:
         with:
           bun-version: "1.3.9"
       - run: bun install --frozen-lockfile
-      - run: bun run scripts/sync.ts
+      - name: Sync docs
+        run: bun run scripts/sync.ts
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Commit and release
+      - name: Commit changes
+        id: commit
         run: |
-          bun run scripts/commit-changes.ts || exit 0
+          if bun run scripts/commit-changes.ts; then
+            git push
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    needs: sync
+    if: needs.sync.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.9"
+      - run: bun install --frozen-lockfile
+      - name: Bump version and tag
+        run: |
           bunx commit-and-tag-version
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git push --follow-tags

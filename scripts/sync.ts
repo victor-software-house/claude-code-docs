@@ -1,15 +1,13 @@
 import { mkdirSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
 import ky from "ky";
+import { render, writeSummary } from "./render.ts";
+import type { SyncResult, SyncSummary } from "./types.ts";
 
 const LLMS_TXT_URL = "https://code.claude.com/docs/llms.txt";
 const DOCS_DIR = join(import.meta.dirname, "..", "docs", "en");
 const URL_PATTERN = /https:\/\/code\.claude\.com\/docs\/en\/[\w-]+\.md/g;
 const client = ky.create({ retry: { limit: 3 } });
-
-type SyncResult =
-	| { status: "added" | "updated" | "unchanged"; filename: string }
-	| { status: "skipped"; filename: string; reason: string };
 
 async function fetchMarkdown(url: string): Promise<string | null> {
 	const response = await client(url);
@@ -42,6 +40,34 @@ async function syncPage(
 	await Bun.write(filepath, content);
 	const status = existingFiles.has(filename) ? "updated" : "added";
 	return { status, filename } as const;
+}
+
+function buildSummary(
+	results: readonly SyncResult[],
+	orphans: readonly string[],
+): SyncSummary {
+	const added = results
+		.filter((r) => r.status === "added")
+		.map((r) => r.filename);
+	const updated = results
+		.filter((r) => r.status === "updated")
+		.map((r) => r.filename);
+	const skipped = results
+		.filter(
+			(r): r is Extract<SyncResult, { status: "skipped" }> =>
+				r.status === "skipped",
+		)
+		.map((r) => ({ filename: r.filename, reason: r.reason }));
+
+	return {
+		total: results.length,
+		added,
+		updated,
+		removed: orphans,
+		unchanged: results.filter((r) => r.status === "unchanged").length,
+		skipped,
+		hasChanges: added.length > 0 || updated.length > 0 || orphans.length > 0,
+	};
 }
 
 async function main() {
@@ -89,16 +115,19 @@ async function main() {
 		Bun.file(join(DOCS_DIR, file)).delete();
 	}
 
-	const count = (status: SyncResult["status"]) =>
-		results.filter((r) => r.status === status).length;
-	const skipped = results.filter((r) => r.status === "skipped");
+	const summary = buildSummary(results, orphans);
 
 	console.log(
-		`Done: ${count("added")} added, ${count("updated")} updated, ${orphans.length} removed, ${count("unchanged")} unchanged, ${skipped.length} skipped`,
+		`Done: ${summary.added.length} added, ${summary.updated.length} updated, ${summary.removed.length} removed, ${summary.unchanged} unchanged, ${summary.skipped.length} skipped`,
 	);
-	if (skipped.length > 0) {
-		console.log(`Skipped: ${skipped.map((r) => r.filename).join(", ")}`);
+	if (summary.skipped.length > 0) {
+		console.log(
+			`Skipped: ${summary.skipped.map((s) => s.filename).join(", ")}`,
+		);
 	}
+
+	const markdown = render("sync-summary", summary);
+	writeSummary(markdown);
 }
 
 main();

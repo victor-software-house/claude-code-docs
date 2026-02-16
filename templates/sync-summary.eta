@@ -1,0 +1,39 @@
+### Sync Results
+
+| Metric | Count |
+|--------|------:|
+| Total pages | <%= it.total %> |
+<% if (it.added.length > 0) { %>| Added | <%= it.added.length %> |
+<% } %><% if (it.updated.length > 0) { %>| Updated | <%= it.updated.length %> |
+<% } %><% if (it.removed.length > 0) { %>| Removed | <%= it.removed.length %> |
+<% } %>| Unchanged | <%= it.unchanged %> |
+<% if (it.skipped.length > 0) { %>| Skipped | <%= it.skipped.length %> |
+<% } %>
+
+<% if (it.added.length > 0) { %>
+#### Added
+
+<% it.added.forEach(function(f) { %>- `<%= f %>`
+<% }) %>
+<% } %>
+<% if (it.updated.length > 0) { %>
+#### Updated
+
+<% it.updated.forEach(function(f) { %>- `<%= f %>`
+<% }) %>
+<% } %>
+<% if (it.removed.length > 0) { %>
+#### Removed
+
+<% it.removed.forEach(function(f) { %>- `<%= f %>`
+<% }) %>
+<% } %>
+<% if (it.skipped.length > 0) { %>
+#### Skipped
+
+<% it.skipped.forEach(function(s) { %>- `<%= s.filename %>` -- <%= s.reason %>
+<% }) %>
+<% } %>
+<% if (!it.hasChanges) { %>
+> No changes detected. Documentation is up to date.
+<% } %>

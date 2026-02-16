@@ -1,0 +1,31 @@
+### Release Summary
+
+<% if (!it.hasChanges) { %>
+> No documentation changes to release.
+<% } else { %>
+| Type | Count |
+|------|------:|
+<% if (it.added.length > 0) { %>| Added (minor) | <%= it.added.length %> |
+<% } %><% if (it.modified.length > 0) { %>| Updated (patch) | <%= it.modified.length %> |
+<% } %><% if (it.deleted.length > 0) { %>| Removed (major) | <%= it.deleted.length %> |
+<% } %>
+
+<% if (it.added.length > 0) { %>
+#### Added
+
+<% it.added.forEach(function(f) { %>- `<%= f %>`
+<% }) %>
+<% } %>
+<% if (it.modified.length > 0) { %>
+#### Updated
+
+<% it.modified.forEach(function(m) { %>- `<%= m.filename %>` <%= m.stat %>
+<% }) %>
+<% } %>
+<% if (it.deleted.length > 0) { %>
+#### Removed
+
+<% it.deleted.forEach(function(f) { %>- `<%= f %>`
+<% }) %>
+<% } %>
+<% } %>
