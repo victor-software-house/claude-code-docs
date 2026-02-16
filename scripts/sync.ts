@@ -29,6 +29,7 @@ async function main() {
 	let added = 0;
 	let updated = 0;
 	let unchanged = 0;
+	const skipped: string[] = [];
 	let done = 0;
 	const total = uniqueUrls.length;
 
@@ -36,7 +37,19 @@ async function main() {
 		const filename = basename(url);
 		const filepath = join(DOCS_DIR, filename);
 
-		const content = await ky(url, { retry: { limit: 3 } }).text();
+		const response = await ky(url, { retry: { limit: 3 } });
+		const contentType = response.headers.get("content-type") ?? "";
+		const content = await response.text();
+
+		// Skip non-markdown responses (some URLs return HTML instead of raw md)
+		if (contentType.includes("text/html") || content.startsWith("<!DOCTYPE")) {
+			skipped.push(filename);
+			done++;
+			process.stdout.write(
+				`\r  [${done}/${total}] ${filename} (skipped: not markdown)`,
+			);
+			return;
+		}
 
 		const file = Bun.file(filepath);
 		const existing = (await file.exists()) ? await file.text() : "";
@@ -69,8 +82,11 @@ async function main() {
 	}
 
 	console.log(
-		`Done: ${added} added, ${updated} updated, ${removed} removed, ${unchanged} unchanged`,
+		`Done: ${added} added, ${updated} updated, ${removed} removed, ${unchanged} unchanged, ${skipped.length} skipped`,
 	);
+	if (skipped.length > 0) {
+		console.log(`Skipped (not markdown): ${skipped.join(", ")}`);
+	}
 }
 
 main();
