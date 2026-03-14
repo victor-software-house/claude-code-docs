@@ -25,7 +25,7 @@ The desktop app has three tabs:
 Chat and Cowork are covered in the [Claude Desktop support articles](https://support.claude.com/en/collections/16163169-claude-desktop). This page focuses on the **Code** tab.
 
 <Note>
-  Claude Code requires a [Pro, Max, Teams, or Enterprise subscription](https://claude.com/pricing).
+  Claude Code requires a [Pro, Max, Teams, or Enterprise subscription](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=desktop_quickstart_pricing).
 </Note>
 
 ## Install
@@ -54,7 +54,7 @@ Chat and Cowork are covered in the [Claude Desktop support articles](https://sup
   </Step>
 
   <Step title="Open the Code tab">
-    Click the **Code** tab at the top center. If clicking Code prompts you to upgrade, you need to [subscribe to a paid plan](https://claude.com/pricing) first. If it prompts you to sign in online, complete the sign-in and restart the app. If you see a 403 error, see [authentication troubleshooting](/en/desktop#403-or-authentication-errors-in-the-code-tab).
+    Click the **Code** tab at the top center. If clicking Code prompts you to upgrade, you need to [subscribe to a paid plan](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=desktop_quickstart_upgrade) first. If it prompts you to sign in online, complete the sign-in and restart the app. If you see a 403 error, see [authentication troubleshooting](/en/desktop#403-or-authentication-errors-in-the-code-tab).
   </Step>
 </Steps>
 
@@ -111,7 +111,7 @@ You've made your first edit. For the full reference on everything Desktop can do
 
 **Give Claude more context.** Type `@filename` in the prompt box to pull a specific file into the conversation, attach images and PDFs using the attachment button, or drag and drop files directly into the prompt. The more context Claude has, the better the results. See [Add files and context](/en/desktop#add-files-and-context-to-prompts).
 
-**Use skills for repeatable tasks.** Type `/` or click **+** → **Slash commands** to browse [built-in commands](/en/interactive-mode#built-in-commands), [custom skills](/en/skills), and plugin skills. Skills are reusable prompts you can invoke whenever you need them, like code review checklists or deployment steps.
+**Use skills for repeatable tasks.** Type `/` or click **+** → **Slash commands** to browse [built-in commands](/en/commands), [custom skills](/en/skills), and plugin skills. Skills are reusable prompts you can invoke whenever you need them, like code review checklists or deployment steps.
 
 **Review changes before committing.** After Claude edits files, a `+12 -1` indicator appears. Click it to open the [diff view](/en/desktop#review-changes-with-diff-view), review modifications file by file, and comment on specific lines. Claude reads your comments and revises. Click **Review code** to have Claude evaluate the diffs itself and leave inline suggestions.
 
