@@ -78,7 +78,7 @@ Beyond these built-in subagents, you can create your own with custom prompts, to
 
 Subagents are defined in Markdown files with YAML frontmatter. You can [create them manually](#write-subagent-files) or use the `/agents` command.
 
-This walkthrough guides you through creating a user-level subagent with the `/agent` command. The subagent reviews code and suggests improvements for the codebase.
+This walkthrough guides you through creating a user-level subagent with the `/agents` command. The subagent reviews code and suggests improvements for the codebase.
 
 <Steps>
   <Step title="Open the subagents interface">
@@ -89,8 +89,8 @@ This walkthrough guides you through creating a user-level subagent with the `/ag
     ```
   </Step>
 
-  <Step title="Create a new user-level agent">
-    Select **Create new agent**, then choose **User-level**. This saves the subagent to `~/.claude/agents/` so it's available in all your projects.
+  <Step title="Choose a location">
+    Select **Create new agent**, then choose **Personal**. This saves the subagent to `~/.claude/agents/` so it's available in all your projects.
   </Step>
 
   <Step title="Generate with Claude">
@@ -102,7 +102,7 @@ This walkthrough guides you through creating a user-level subagent with the `/ag
     each issue, show the current code, and provide an improved version.
     ```
 
-    Claude generates the system prompt and configuration. Press `e` to open it in your editor if you want to customize it.
+    Claude generates the identifier, description, and system prompt for you.
   </Step>
 
   <Step title="Select tools">
@@ -117,8 +117,12 @@ This walkthrough guides you through creating a user-level subagent with the `/ag
     Pick a background color for the subagent. This helps you identify which subagent is running in the UI.
   </Step>
 
+  <Step title="Configure memory">
+    Select **Enable** to give the subagent a [persistent memory directory](#enable-persistent-memory) at `~/.claude/agent-memory/`. The subagent uses this to accumulate insights across conversations, such as codebase patterns and recurring issues. Select **None** if you don't want the subagent to persist learnings.
+  </Step>
+
   <Step title="Save and try it out">
-    Save the subagent. It's available immediately (no restart needed). Try it:
+    Review the configuration summary. Press `s` or `Enter` to save, or press `e` to save and edit the file in your editor. The subagent is available immediately. Try it:
 
     ```text  theme={null}
     Use the code-improver agent to suggest improvements in this project
@@ -318,11 +322,11 @@ The `permissionMode` field controls how the subagent handles permission prompts.
 | `default`           | Standard permission checking with prompts                          |
 | `acceptEdits`       | Auto-accept file edits                                             |
 | `dontAsk`           | Auto-deny permission prompts (explicitly allowed tools still work) |
-| `bypassPermissions` | Skip all permission checks                                         |
+| `bypassPermissions` | Skip permission prompts                                            |
 | `plan`              | Plan mode (read-only exploration)                                  |
 
 <Warning>
-  Use `bypassPermissions` with caution. It skips all permission checks, allowing the subagent to execute any operation without approval.
+  Use `bypassPermissions` with caution. It skips permission prompts, allowing the subagent to execute operations without approval. Writes to `.git`, `.claude`, `.vscode`, and `.idea` directories still prompt for confirmation, except for `.claude/commands`, `.claude/agents`, and `.claude/skills`. See [permission modes](/en/permissions#permission-modes) for details.
 </Warning>
 
 If the parent uses `bypassPermissions`, this takes precedence and cannot be overridden.
@@ -380,7 +384,7 @@ When memory is enabled:
 
 ##### Persistent memory tips
 
-* `user` is the recommended default scope. Use `project` or `local` when the subagent's knowledge is only relevant to a specific codebase.
+* `project` is the recommended default scope. It makes subagent knowledge shareable via version control. Use `user` when the subagent's knowledge is broadly applicable across projects, or `local` when the knowledge should not be checked into version control.
 * Ask the subagent to consult its memory before starting work: "Review this PR, and check your memory for patterns you've seen before."
 * Ask the subagent to update its memory after completing a task: "Now that you're done, save what you learned to your memory." Over time, this builds a knowledge base that makes the subagent more effective.
 * Include memory instructions directly in the subagent's markdown file so it proactively maintains its own knowledge base:

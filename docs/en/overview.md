@@ -173,8 +173,8 @@ Here are some of the ways you can use Claude Code:
     Claude Code is composable and follows the Unix philosophy. Pipe logs into it, run it in CI, or chain it with other tools:
 
     ```bash  theme={null}
-    # Monitor logs and get alerted
-    tail -f app.log | claude -p "Slack me if you see any anomalies"
+    # Analyze recent log output
+    tail -200 app.log | claude -p "Slack me if you see any anomalies"
 
     # Automate translations in CI
     claude -p "translate new strings into French and raise a PR for review"
