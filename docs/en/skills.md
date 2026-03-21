@@ -186,18 +186,19 @@ Your skill instructions here...
 
 All fields are optional. Only `description` is recommended so Claude knows when to use the skill.
 
-| Field                      | Required    | Description                                                                                                                                           |
-| :------------------------- | :---------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                     | No          | Display name for the skill. If omitted, uses the directory name. Lowercase letters, numbers, and hyphens only (max 64 characters).                    |
-| `description`              | Recommended | What the skill does and when to use it. Claude uses this to decide when to apply the skill. If omitted, uses the first paragraph of markdown content. |
-| `argument-hint`            | No          | Hint shown during autocomplete to indicate expected arguments. Example: `[issue-number]` or `[filename] [format]`.                                    |
-| `disable-model-invocation` | No          | Set to `true` to prevent Claude from automatically loading this skill. Use for workflows you want to trigger manually with `/name`. Default: `false`. |
-| `user-invocable`           | No          | Set to `false` to hide from the `/` menu. Use for background knowledge users shouldn't invoke directly. Default: `true`.                              |
-| `allowed-tools`            | No          | Tools Claude can use without asking permission when this skill is active.                                                                             |
-| `model`                    | No          | Model to use when this skill is active.                                                                                                               |
-| `context`                  | No          | Set to `fork` to run in a forked subagent context.                                                                                                    |
-| `agent`                    | No          | Which subagent type to use when `context: fork` is set.                                                                                               |
-| `hooks`                    | No          | Hooks scoped to this skill's lifecycle. See [Hooks in skills and agents](/en/hooks#hooks-in-skills-and-agents) for configuration format.              |
+| Field                      | Required    | Description                                                                                                                                                                                                  |
+| :------------------------- | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                     | No          | Display name for the skill. If omitted, uses the directory name. Lowercase letters, numbers, and hyphens only (max 64 characters).                                                                           |
+| `description`              | Recommended | What the skill does and when to use it. Claude uses this to decide when to apply the skill. If omitted, uses the first paragraph of markdown content.                                                        |
+| `argument-hint`            | No          | Hint shown during autocomplete to indicate expected arguments. Example: `[issue-number]` or `[filename] [format]`.                                                                                           |
+| `disable-model-invocation` | No          | Set to `true` to prevent Claude from automatically loading this skill. Use for workflows you want to trigger manually with `/name`. Default: `false`.                                                        |
+| `user-invocable`           | No          | Set to `false` to hide from the `/` menu. Use for background knowledge users shouldn't invoke directly. Default: `true`.                                                                                     |
+| `allowed-tools`            | No          | Tools Claude can use without asking permission when this skill is active.                                                                                                                                    |
+| `model`                    | No          | Model to use when this skill is active.                                                                                                                                                                      |
+| `effort`                   | No          | [Effort level](/en/model-config#adjust-effort-level) when this skill is active. Overrides the session effort level. Default: inherits from session. Options: `low`, `medium`, `high`, `max` (Opus 4.6 only). |
+| `context`                  | No          | Set to `fork` to run in a forked subagent context.                                                                                                                                                           |
+| `agent`                    | No          | Which subagent type to use when `context: fork` is set.                                                                                                                                                      |
+| `hooks`                    | No          | Hooks scoped to this skill's lifecycle. See [Hooks in skills and agents](/en/hooks#hooks-in-skills-and-agents) for configuration format.                                                                     |
 
 #### Available string substitutions
 
@@ -351,9 +352,9 @@ Preserve all existing behavior and tests.
 
 ### Inject dynamic context
 
-The `!`command\`\` syntax runs shell commands before the skill content is sent to Claude. The command output replaces the placeholder, so Claude receives actual data, not the command itself.
+The `` !`<command>` `` syntax runs shell commands before the skill content is sent to Claude. The command output replaces the placeholder, so Claude receives actual data, not the command itself.
 
-This skill summarizes a pull request by fetching live PR data with the GitHub CLI. The `!`gh pr diff\`\` and other commands run first, and their output gets inserted into the prompt:
+This skill summarizes a pull request by fetching live PR data with the GitHub CLI. The `` !`gh pr diff` `` and other commands run first, and their output gets inserted into the prompt:
 
 ```yaml  theme={null}
 ---
@@ -375,7 +376,7 @@ Summarize this pull request...
 
 When this skill runs:
 
-1. Each `!`command\`\` executes immediately (before Claude sees anything)
+1. Each `` !`<command>` `` executes immediately (before Claude sees anything)
 2. The output replaces the placeholder in the skill content
 3. Claude receives the fully-rendered prompt with actual PR data
 
@@ -501,7 +502,7 @@ Run the visualization script from your project root:
 
 ```bash
 python ~/.claude/skills/codebase-visualizer/scripts/visualize.py .
-```text
+```
 
 This creates `codebase-map.html` in the current directory and opens it in your default browser.
 
