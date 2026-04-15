@@ -56,7 +56,7 @@ This quickstart walks you through creating a plugin with a custom skill. You'll 
   <Step title="Create the plugin directory">
     Every plugin lives in its own directory containing a manifest and your skills, agents, or hooks. Create one now:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     mkdir my-first-plugin
     ```
   </Step>
@@ -66,7 +66,7 @@ This quickstart walks you through creating a plugin with a custom skill. You'll 
 
     Create the `.claude-plugin` directory inside your plugin folder:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     mkdir my-first-plugin/.claude-plugin
     ```
 
@@ -98,7 +98,7 @@ This quickstart walks you through creating a plugin with a custom skill. You'll 
 
     Create a skill directory in your plugin folder:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     mkdir -p my-first-plugin/skills/hello
     ```
 
@@ -117,13 +117,13 @@ This quickstart walks you through creating a plugin with a custom skill. You'll 
   <Step title="Test your plugin">
     Run Claude Code with the `--plugin-dir` flag to load your plugin:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     claude --plugin-dir ./my-first-plugin
     ```
 
     Once Claude Code starts, try your new skill:
 
-    ```shell  theme={null}
+    ```shell theme={null}
     /my-first-plugin:hello
     ```
 
@@ -153,7 +153,7 @@ This quickstart walks you through creating a plugin with a custom skill. You'll 
 
     Run `/reload-plugins` to pick up the changes, then try the skill with your name:
 
-    ```shell  theme={null}
+    ```shell theme={null}
     /my-first-plugin:hello Alex
     ```
 
@@ -205,7 +205,7 @@ Plugins can include [Agent Skills](/en/skills) to extend Claude's capabilities. 
 
 Add a `skills/` directory at your plugin root with Skill folders containing `SKILL.md` files:
 
-```text  theme={null}
+```text theme={null}
 my-plugin/
 ├── .claude-plugin/
 │   └── plugin.json
@@ -214,11 +214,10 @@ my-plugin/
         └── SKILL.md
 ```
 
-Each `SKILL.md` needs frontmatter with `name` and `description` fields, followed by instructions:
+Each `SKILL.md` contains YAML frontmatter and instructions. Include a `description` so Claude knows when to use the skill:
 
-```yaml  theme={null}
+```yaml theme={null}
 ---
-name: code-review
 description: Reviews code for best practices and potential issues. Use when reviewing code, checking PRs, or analyzing code quality.
 ---
 
@@ -277,7 +276,7 @@ For plugins with many components, organize your directory structure by functiona
 
 Use the `--plugin-dir` flag to test plugins during development. This loads your plugin directly without requiring installation.
 
-```bash  theme={null}
+```bash theme={null}
 claude --plugin-dir ./my-plugin
 ```
 
@@ -292,7 +291,7 @@ As you make changes to your plugin, run `/reload-plugins` to pick up the updates
 <Tip>
   You can load multiple plugins at once by specifying the flag multiple times:
 
-  ```bash  theme={null}
+  ```bash theme={null}
   claude --plugin-dir ./plugin-one --plugin-dir ./plugin-two
   ```
 </Tip>
@@ -337,7 +336,7 @@ If you already have skills or hooks in your `.claude/` directory, you can conver
   <Step title="Create the plugin structure">
     Create a new plugin directory:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     mkdir -p my-plugin/.claude-plugin
     ```
 
@@ -355,7 +354,7 @@ If you already have skills or hooks in your `.claude/` directory, you can conver
   <Step title="Copy your existing files">
     Copy your existing configurations to the plugin directory:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     # Copy commands
     cp -r .claude/commands my-plugin/
 
@@ -370,7 +369,7 @@ If you already have skills or hooks in your `.claude/` directory, you can conver
   <Step title="Migrate hooks">
     If you have hooks in your settings, create a hooks directory:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     mkdir my-plugin/hooks
     ```
 
@@ -393,7 +392,7 @@ If you already have skills or hooks in your `.claude/` directory, you can conver
   <Step title="Test your migrated plugin">
     Load your plugin to verify everything works:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     claude --plugin-dir ./my-plugin
     ```
 

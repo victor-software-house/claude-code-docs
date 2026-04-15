@@ -42,7 +42,7 @@ You can start a Remote Control session from the CLI or the VS Code extension. Th
   <Tab title="Server mode">
     Navigate to your project directory and run:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     claude remote-control
     ```
 
@@ -63,13 +63,13 @@ You can start a Remote Control session from the CLI or the VS Code extension. Th
   <Tab title="Interactive session">
     To start a normal interactive Claude Code session with Remote Control enabled, use the `--remote-control` flag (or `--rc`):
 
-    ```bash  theme={null}
+    ```bash theme={null}
     claude --remote-control
     ```
 
     Optionally pass a name for the session:
 
-    ```bash  theme={null}
+    ```bash theme={null}
     claude --remote-control "My Project"
     ```
 
@@ -79,13 +79,13 @@ You can start a Remote Control session from the CLI or the VS Code extension. Th
   <Tab title="From an existing session">
     If you're already in a Claude Code session and want to continue it remotely, use the `/remote-control` (or `/rc`) command:
 
-    ```text  theme={null}
+    ```text theme={null}
     /remote-control
     ```
 
     Pass a name as an argument to set a custom session title:
 
-    ```text  theme={null}
+    ```text theme={null}
     /remote-control My Project
     ```
 
@@ -95,7 +95,7 @@ You can start a Remote Control session from the CLI or the VS Code extension. Th
   <Tab title="VS Code">
     In the [Claude Code VS Code extension](/en/vs-code), type `/remote-control` or `/rc` in the prompt box, or open the command menu with `/` and select it. Requires Claude Code v2.1.79 or later.
 
-    ```text  theme={null}
+    ```text theme={null}
     /remote-control
     ```
 
@@ -188,7 +188,7 @@ This error has three distinct causes. Run `/status` first to see which login met
 
 Claude Code could not obtain a short-lived credential from the Anthropic API to establish the connection. Re-run with `--verbose` to see the full error:
 
-```bash  theme={null}
+```bash theme={null}
 claude remote-control --verbose
 ```
 
@@ -202,13 +202,13 @@ Common causes:
 
 Claude Code offers several ways to work when you're not at your terminal. They differ in what triggers the work, where Claude runs, and how much you need to set up.
 
-|                                                | Trigger                                                                                        | Claude runs on                                                                                          | Setup                                                                                                                                | Best for                                                      |
-| :--------------------------------------------- | :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------ |
-| [Dispatch](/en/desktop#sessions-from-dispatch) | Message a task from the Claude mobile app                                                      | Your machine (Desktop)                                                                                  | [Pair the mobile app with Desktop](https://support.claude.com/en/articles/13947068)                                                  | Delegating work while you're away, minimal setup              |
-| [Remote Control](/en/remote-control)           | Drive a running session from [claude.ai/code](https://claude.ai/code) or the Claude mobile app | Your machine (CLI or VS Code)                                                                           | Run `claude remote-control`                                                                                                          | Steering in-progress work from another device                 |
-| [Channels](/en/channels)                       | Push events from a chat app like Telegram or Discord, or your own server                       | Your machine (CLI)                                                                                      | [Install a channel plugin](/en/channels#quickstart) or [build your own](/en/channels-reference)                                      | Reacting to external events like CI failures or chat messages |
-| [Slack](/en/slack)                             | Mention `@Claude` in a team channel                                                            | Anthropic cloud                                                                                         | [Install the Slack app](/en/slack#setting-up-claude-code-in-slack) with [Claude Code on the web](/en/claude-code-on-the-web) enabled | PRs and reviews from team chat                                |
-| [Scheduled tasks](/en/scheduled-tasks)         | Set a schedule                                                                                 | [CLI](/en/scheduled-tasks), [Desktop](/en/desktop-scheduled-tasks), or [cloud](/en/web-scheduled-tasks) | Pick a frequency                                                                                                                     | Recurring automation like daily reviews                       |
+|                                                | Trigger                                                                                        | Claude runs on                                                                               | Setup                                                                                                                                | Best for                                                      |
+| :--------------------------------------------- | :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------ |
+| [Dispatch](/en/desktop#sessions-from-dispatch) | Message a task from the Claude mobile app                                                      | Your machine (Desktop)                                                                       | [Pair the mobile app with Desktop](https://support.claude.com/en/articles/13947068)                                                  | Delegating work while you're away, minimal setup              |
+| [Remote Control](/en/remote-control)           | Drive a running session from [claude.ai/code](https://claude.ai/code) or the Claude mobile app | Your machine (CLI or VS Code)                                                                | Run `claude remote-control`                                                                                                          | Steering in-progress work from another device                 |
+| [Channels](/en/channels)                       | Push events from a chat app like Telegram or Discord, or your own server                       | Your machine (CLI)                                                                           | [Install a channel plugin](/en/channels#quickstart) or [build your own](/en/channels-reference)                                      | Reacting to external events like CI failures or chat messages |
+| [Slack](/en/slack)                             | Mention `@Claude` in a team channel                                                            | Anthropic cloud                                                                              | [Install the Slack app](/en/slack#setting-up-claude-code-in-slack) with [Claude Code on the web](/en/claude-code-on-the-web) enabled | PRs and reviews from team chat                                |
+| [Scheduled tasks](/en/scheduled-tasks)         | Set a schedule                                                                                 | [CLI](/en/scheduled-tasks), [Desktop](/en/desktop-scheduled-tasks), or [cloud](/en/routines) | Pick a frequency                                                                                                                     | Recurring automation like daily reviews                       |
 
 ## Related resources
 

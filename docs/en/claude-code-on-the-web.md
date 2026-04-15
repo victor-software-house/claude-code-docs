@@ -37,7 +37,7 @@ Cloud sessions need access to your GitHub repositories to clone code and push br
 | **GitHub App**   | Install the Claude GitHub App on specific repositories during [web onboarding](/en/web-quickstart). Access is scoped per repository.         | Teams that want explicit per-repo authorization |
 | **`/web-setup`** | Run `/web-setup` in your terminal to sync your local `gh` CLI token to your Claude account. Access matches whatever your `gh` token can see. | Individual developers who already use `gh`      |
 
-Either method works. [`/schedule`](/en/web-scheduled-tasks) checks for either form of access and prompts you to run `/web-setup` if neither is configured. See [Connect from your terminal](/en/web-quickstart#connect-from-your-terminal) for the `/web-setup` walkthrough.
+Either method works. [`/schedule`](/en/routines) checks for either form of access and prompts you to run `/web-setup` if neither is configured. See [Connect from your terminal](/en/web-quickstart#connect-from-your-terminal) for the `/web-setup` walkthrough.
 
 The GitHub App is required for [Auto-fix](#auto-fix-pull-requests), which uses the App to receive PR webhooks. If you connect with `/web-setup` and later want Auto-fix, install the App on those repositories.
 
@@ -115,11 +115,11 @@ Claude runs tests as part of working on a task. Ask for it in your prompt, like 
 
 PostgreSQL and Redis are pre-installed but not running by default. Start each one in a [setup script](#setup-scripts) or ask Claude to start it during the session:
 
-```bash  theme={null}
+```bash theme={null}
 service postgresql start
 ```
 
-```bash  theme={null}
+```bash theme={null}
 service redis-server start
 ```
 
@@ -150,7 +150,7 @@ Environments control [network access](#network-access), environment variables, a
 
 Environment variables use `.env` format with one `KEY=value` pair per line. Don't wrap values in quotes, since quotes are stored as part of the value.
 
-```text  theme={null}
+```text theme={null}
 NODE_ENV=development
 LOG_LEVEL=debug
 DATABASE_URL=postgres://localhost:5432/myapp
@@ -166,7 +166,7 @@ To add a setup script, open the environment settings dialog and enter your scrip
 
 This example installs the `gh` CLI, which isn't pre-installed:
 
-```bash  theme={null}
+```bash theme={null}
 #!/bin/bash
 apt update && apt install -y gh
 ```
@@ -198,7 +198,7 @@ SessionStart hooks can also be defined in your user-level `~/.claude/settings.js
 
 To install dependencies only in cloud sessions, add a SessionStart hook to your repo's `.claude/settings.json`:
 
-```json  theme={null}
+```json theme={null}
 {
   "hooks": {
     "SessionStart": [
@@ -218,7 +218,7 @@ To install dependencies only in cloud sessions, add a SessionStart hook to your 
 
 Create the script at `scripts/install_pkgs.sh` and make it executable with `chmod +x`. The `CLAUDE_CODE_REMOTE` environment variable is set to `true` in cloud sessions, so you can use it to skip local execution:
 
-```bash  theme={null}
+```bash theme={null}
 #!/bin/bash
 
 if [ "$CLAUDE_CODE_REMOTE" != "true" ]; then
@@ -262,7 +262,7 @@ GitHub operations use a [separate proxy](#github-proxy) that is independent of t
 
 To allow domains that aren't in the Trusted list, select **Custom** in the environment's network access settings. An **Allowed domains** field appears. Enter one domain per line:
 
-```text  theme={null}
+```text theme={null}
 api.example.com
 *.internal.example.com
 registry.example.com
@@ -556,7 +556,7 @@ These workflows require the [Claude Code CLI](/en/quickstart) signed in to the s
 
 Start a cloud session from the command line with the `--remote` flag:
 
-```bash  theme={null}
+```bash theme={null}
 claude --remote "Fix the authentication bug in src/auth/login.ts"
 ```
 
@@ -572,13 +572,13 @@ Use `/tasks` in the Claude Code CLI to check progress, or open the session on cl
 
 **Plan locally, execute remotely**: for complex tasks, start Claude in plan mode to collaborate on the approach, then send work to the cloud:
 
-```bash  theme={null}
+```bash theme={null}
 claude --permission-mode plan
 ```
 
 In plan mode, Claude reads files, runs commands to explore, and proposes a plan without editing source code. Once you're satisfied, save the plan to the repo, commit, and push so the cloud VM can clone it. Then start a cloud session for autonomous execution:
 
-```bash  theme={null}
+```bash theme={null}
 claude --remote "Execute the migration plan in docs/migration-plan.md"
 ```
 
@@ -588,7 +588,7 @@ This pattern gives you control over the strategy while letting Claude execute au
 
 **Run tasks in parallel**: each `--remote` command creates its own cloud session that runs independently. You can start multiple tasks and they'll all run simultaneously in separate sessions:
 
-```bash  theme={null}
+```bash theme={null}
 claude --remote "Fix the flaky test in auth.spec.ts"
 claude --remote "Update the API documentation"
 claude --remote "Refactor the logger to use structured output"
@@ -602,7 +602,7 @@ When you run `claude --remote` from a repository that isn't connected to GitHub,
 
 This fallback activates automatically when GitHub access isn't available. To force it even when GitHub is connected, set `CCR_FORCE_BUNDLE=1`:
 
-```bash  theme={null}
+```bash theme={null}
 CCR_FORCE_BUNDLE=1 claude --remote "Run the test suite and fix any failures"
 ```
 
@@ -744,7 +744,7 @@ Before relying on cloud sessions for a workflow, account for these constraints:
 
 ## Related resources
 
-* [Schedule tasks on the web](/en/web-scheduled-tasks): automate recurring work like daily PR reviews and dependency audits
+* [Routines](/en/routines): automate work on a schedule, via API call, or in response to GitHub events
 * [Hooks configuration](/en/hooks): run scripts at session lifecycle events
 * [Settings reference](/en/settings): all configuration options
 * [Security](/en/security): isolation guarantees and data handling
