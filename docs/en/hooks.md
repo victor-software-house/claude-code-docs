@@ -1359,13 +1359,13 @@ Matches on tool name, same values as PreToolUse.
 
 `PostToolUse` hooks can provide feedback to Claude after tool execution. In addition to the [JSON output fields](#json-output) available to all hooks, your hook script can return these event-specific fields:
 
-| Field                  | Description                                                                                                                  |
-| :--------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
-| `decision`             | `"block"` prompts Claude with the `reason`. Omit to allow the action to proceed                                              |
-| `reason`               | Explanation shown to Claude when `decision` is `"block"`                                                                     |
-| `additionalContext`    | String added to Claude's context alongside the tool result. See [Add context for Claude](#add-context-for-claude)            |
-| `updatedToolOutput`    | Replaces the tool's output with the provided value before it is sent to Claude. The value must match the tool's output shape |
-| `updatedMCPToolOutput` | Replaces the output for [MCP tools](#match-mcp-tools) only. Prefer `updatedToolOutput`, which works for all tools            |
+| Field                  | Description                                                                                                                        |
+| :--------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
+| `decision`             | `"block"` adds the `reason` next to the tool result. Claude still sees the original output; to replace it, use `updatedToolOutput` |
+| `reason`               | Explanation shown to Claude when `decision` is `"block"`                                                                           |
+| `additionalContext`    | String added to Claude's context alongside the tool result. See [Add context for Claude](#add-context-for-claude)                  |
+| `updatedToolOutput`    | Replaces the tool's output with the provided value before it is sent to Claude. The value must match the tool's output shape       |
+| `updatedMCPToolOutput` | Replaces the output for [MCP tools](#match-mcp-tools) only. Prefer `updatedToolOutput`, which works for all tools                  |
 
 The example below replaces the output of a `Bash` call. The replacement value matches the `Bash` tool's output shape:
 
@@ -2412,10 +2412,10 @@ The LLM must respond with JSON containing:
 }
 ```
 
-| Field    | Description                                              |
-| :------- | :------------------------------------------------------- |
-| `ok`     | `true` allows the action, `false` blocks it              |
-| `reason` | Required when `ok` is `false`. Explanation for the block |
+| Field    | Description                                                         |
+| :------- | :------------------------------------------------------------------ |
+| `ok`     | `true` to allow, `false` to block. See the per-event behavior below |
+| `reason` | Required when `ok` is `false`. Explanation for the decision         |
 
 What happens on `ok: false` depends on the event:
 
