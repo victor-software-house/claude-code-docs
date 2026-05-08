@@ -427,7 +427,7 @@ See the [plugin components reference](/en/plugins-reference#mcp-servers) for det
 
 ## MCP installation scopes
 
-MCP servers can be configured at three scopes. The scope you choose controls which projects the server loads in and whether the configuration is shared with your team.
+MCP servers can be configured at three scopes. The scope you choose controls which projects the server loads in and whether the configuration is shared with your team. Administrators can also deploy servers at the enterprise level via [managed configuration](#managed-mcp-configuration).
 
 | Scope                     | Loads in             | Shared with team         | Stored in                   |
 | ------------------------- | -------------------- | ------------------------ | --------------------------- |
@@ -1358,6 +1358,8 @@ URL patterns support wildcards using `*` to match any sequence of characters. Th
 * `https://mcp.company.com/*` - Allow all paths on a specific domain
 * `https://*.example.com/*` - Allow any subdomain of example.com
 * `http://localhost:*/*` - Allow any port on localhost
+
+Hostname matching is case-insensitive and ignores a trailing FQDN dot, matching DNS semantics. A pattern like `*://Mcp.Example.com/*` matches `https://mcp.example.com/api`, and `https://mcp.example.com.` is treated the same as `https://mcp.example.com`. Paths remain case-sensitive.
 
 **Remote server behavior**:
 
