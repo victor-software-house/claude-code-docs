@@ -272,11 +272,11 @@ The diff detail view also binds pager-style keys to the standard [scroll actions
 
 Actions available in the `ModelPicker` context:
 
-| Action                       | Default | Description                                       |
-| :--------------------------- | :------ | :------------------------------------------------ |
-| `modelPicker:decreaseEffort` | Left    | Decrease effort level                             |
-| `modelPicker:increaseEffort` | Right   | Increase effort level                             |
-| `modelPicker:setAsDefault`   | d       | Set highlighted model as default for new sessions |
+| Action                        | Default | Description                                  |
+| :---------------------------- | :------ | :------------------------------------------- |
+| `modelPicker:decreaseEffort`  | Left    | Decrease effort level                        |
+| `modelPicker:increaseEffort`  | Right   | Increase effort level                        |
+| `modelPicker:thisSessionOnly` | s       | Apply highlighted model to this session only |
 
 ### Select actions
 
@@ -461,6 +461,7 @@ When vim mode is enabled via `/config` → Editor mode, keybindings and vim mode
 * The Escape key in vim mode switches INSERT to NORMAL mode; it does not trigger `chat:cancel`
 * Most Ctrl+key shortcuts pass through vim mode to the keybinding system
 * In vim NORMAL mode, `?` shows the help menu (vim behavior)
+* In vim NORMAL mode, `/` opens history search, the same as Ctrl+R in standard mode
 
 ## Validation
 
