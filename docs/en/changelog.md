@@ -10,6 +10,51 @@ This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anth
 
 Run `claude --version` to check your installed version.
 
+<Update label="2.1.176" description="June 12, 2026">
+  * Session titles are now generated in the language of your conversation (set the `language` setting to pin a specific language)
+  * Added `footerLinksRegexes` setting for regex-matched link badges in the footer row, configurable via user or managed settings
+  * Improved Bedrock credential caching: credentials from `awsCredentialExport` are now cached until their `Expiration` instead of a fixed 1 hour
+  * Fixed `availableModels` enforcement: alias model picks can no longer be redirected to a blocked model via `ANTHROPIC_DEFAULT_*_MODEL` environment variables, and `/fast` now refuses to toggle when it would switch to a model outside the allowlist
+  * Fixed auto mode failing on Fable 5 for organizations without Opus 4.8 enabled — the classifier now falls back to the best available Opus model
+  * Fixed hook `if` conditions for Read/Edit/Write tool paths: documented patterns like `Edit(src/**)`, `Read(~/.ssh/**)`, and `Read(.env)` now match correctly
+  * Fixed Linux sandbox failing to start when `.claude/settings.json` is a symlink with an absolute target
+  * Fixed `/copy` and mouse-selection copy not reaching the system clipboard inside tmux over SSH, and tmux paste buffer not loading on versions older than 3.2
+  * Fixed Remote Control connecting from web/mobile silently switching the session's model
+  * Fixed Remote Control disconnect notifications showing a bare numeric code instead of a human-readable reason, and connection failures adding a duplicate line to the conversation transcript
+  * Fixed Remote Control sessions not disconnecting when you sign in to a different account
+  * Fixed `/cd` and worktree moves leaving the session reporting the previous directory's git branch
+  * Fixed `claude agents`: pressing back in one window no longer detaches other windows attached to the same session
+  * Fixed backgrounded sessions showing "Working" forever when `/bg` mid-turn had nothing left to continue
+  * Fixed background agent search by PR URL: PRs opened during scheduled wakeups or while a job was blocked now appear in `claude agents` search
+  * Fixed the agents view input showing no text cursor on Windows
+  * Fixed `claude --bg -cn <name>` not seeding the session name
+  * Fixed background sessions to neutralize Windows network paths in persisted state before respawn
+  * Fixed background-session respawn rejecting malformed resume IDs from corrupted state files
+  * Fixed the Windows background-service daemon not starting when `~/.claude/daemon` has the ReadOnly attribute set
+  * Fixed cloud sessions failing with "Could not resolve authentication method" when idle for too long before being claimed
+  * Background sessions now show clearer guidance when a window left open across an auto-update can't submit a reply, and `claude daemon status` explains version-skew behavior
+</Update>
+
+<Update label="2.1.175" description="June 12, 2026">
+  * Added `enforceAvailableModels` managed setting — when enabled, the `availableModels` allowlist also constrains the Default model (a Default that would resolve to a disallowed model now falls back to the first allowed model), and user or project settings can no longer widen a managed `availableModels` list
+</Update>
+
+<Update label="2.1.174" description="June 12, 2026">
+  * Added `wheelScrollAccelerationEnabled` setting to disable mouse-wheel scroll acceleration in fullscreen mode
+  * Fixed the `/model` picker hiding the model family that Default resolves to — Opus now appears as its own row on Max/Team Premium/Enterprise plans, Sonnet on Pro/Team plans, and Opus on pay-as-you-go API accounts
+  * Fixed `/model` picker showing a hardcoded Sonnet version label when `ANTHROPIC_DEFAULT_SONNET_MODEL` pins a different Sonnet
+  * Fixed the "Fable 5 is now consuming usage credits" banner incorrectly showing for enterprise accounts with usage-based billing
+  * Fixed Bedrock GovCloud regions (`us-gov-*`) deriving the wrong inference profile prefix (`global` instead of `us-gov`), causing 400 errors on derived model IDs
+  * Fixed background sessions inheriting another session's `ANTHROPIC_*` provider env (gateway URL, custom headers, `/model` aliases) from the shell that started the background daemon
+  * Fixed a 1-2 second pause when exiting Claude Code shortly after a shell command was interrupted or killed on macOS and Linux
+  * Fixed git commit co-author attribution showing an incorrect model name for some models
+  * Fixed the `/advisor` dialog pre-selecting a saved advisor model that is blocked by the `availableModels` allowlist
+  * Fixed skill hot-reload re-sending the entire skill listing when a single skill changed; only changed skills are now re-announced
+  * Fixed Workflow tool `agent()` subagents missing per-agent attribution headers
+  * \[VSCode] Added usage attribution to the Account & usage dialog (`/usage`) showing cache misses, long context, subagents, and per-skill/agent/plugin/MCP breakdowns over the last 24h or 7d
+  * Fixed pre-warmed background workers failing with "Could not resolve authentication method" when claimed after sitting idle
+</Update>
+
 <Update label="2.1.173" description="June 11, 2026">
   * Fixed Fable 5 model names with a `[1m]` suffix not being normalized — Fable 5 includes 1M context by default, so the suffix is now stripped automatically
   * Fixed a spurious "sandbox dependencies missing" startup warning on Windows when sandbox was enabled in settings
