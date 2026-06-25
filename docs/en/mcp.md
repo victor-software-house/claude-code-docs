@@ -176,6 +176,8 @@ If an HTTP or SSE server disconnects mid-session, Claude Code automatically reco
 
 The same backoff applies when an HTTP or SSE server fails its initial connection at startup. As of v2.1.121, Claude Code retries the initial connection up to three times on transient errors such as a 5xx response, a connection refused, or a timeout, then marks the server as failed if it still cannot connect. Authentication and not-found errors are not retried because they require a configuration change to resolve.
 
+As of v2.1.191, the capability discovery requests that run after a successful connection, such as `tools/list`, `prompts/list`, and `resources/list`, also retry transient network and server errors up to three times with short backoff. Authentication errors, 4xx responses, and request timeouts are not retried.
+
 ### Push messages with channels
 
 An MCP server can also push messages directly into your session so Claude can react to external events like CI results, monitoring alerts, or chat messages. To enable this, your server declares the `claude/channel` capability and you opt it in with the `--channels` flag at startup. See [Channels](/en/channels) to use an officially supported channel, or [Channels reference](/en/channels-reference) to build your own.
@@ -195,6 +197,8 @@ An MCP server can also push messages directly into your session so Claude can re
 </Tip>
 
 The per-server `timeout` is a hard wall-clock limit per tool call, and progress notifications from the server do not extend it. Values below 1000 are ignored and fall through to `MCP_TOOL_TIMEOUT`, or to its default of about 28 hours when that variable is unset. {/* min-version: 2.1.162 */}Before v2.1.162, values below 1000 were floored to one second instead. For HTTP and SSE servers, the per-request fetch first-byte budget has a 60-second minimum.
+
+As of v2.1.187, a tool call to a remote HTTP, SSE, WebSocket, or [claude.ai connector](#use-mcp-servers-from-claude-ai) server that sends no response and no progress notification for 5 minutes aborts with an error instead of waiting for the wall-clock limit. Set the [`CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT`](/en/env-vars) environment variable in milliseconds to change the idle window, or set it to `0` to disable the check. Stdio servers are local processes and are not subject to the idle timeout.
 
 ### Plugin-provided MCP servers
 
@@ -518,7 +522,7 @@ claude mcp login sentry
 
 To clear stored credentials later, run `claude mcp logout <name>`.
 
-When you're connected over SSH, add `--no-browser` so the command prints the authorization URL instead of opening a browser. Open the URL on your local machine, then paste the full redirect URL from your browser's address bar back at the prompt. The command needs an interactive terminal for the paste step, so connect with `ssh -t`.
+As of v2.1.191, the command detects when no local browser is available, such as during an SSH session or on Linux without a display server, and prints the authorization URL instead of trying to open a browser. Open the URL on your local machine, then paste the full redirect URL from your browser's address bar back at the prompt. The command needs an interactive terminal for the paste step, so connect with `ssh -t`. Pass `--no-browser` to force the URL prompt even when a local browser is detected.
 
 ```bash theme={null}
 claude mcp login sentry --no-browser
