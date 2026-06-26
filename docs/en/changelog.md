@@ -10,6 +10,47 @@ This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anth
 
 Run `claude --version` to check your installed version.
 
+<Update label="2.1.193" description="June 25, 2026">
+  * Added `autoMode.classifyAllShell` setting to route all Bash/PowerShell commands through the auto-mode classifier instead of only arbitrary-code-execution patterns
+  * Added auto-mode denial reasons to the transcript, the denial toast, and `/permissions` recent denials
+  * Added `claude_code.assistant_response` OpenTelemetry log event containing the model's response text. Redacted unless `OTEL_LOG_ASSISTANT_RESPONSES=1`; when that var is unset it follows `OTEL_LOG_USER_PROMPTS`, so deployments that already log prompt content will start receiving response content on upgrade — set `OTEL_LOG_ASSISTANT_RESPONSES=0` to keep prompts-only.
+  * Added live file path autocomplete to bash mode (`!`)
+  * Added a startup notice when MCP servers need authentication, pointing at `/mcp`
+  * Added automatic memory-pressure reaping for idle background shell commands (disable with `CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP=1`)
+  * Fixed `/model` and other client-data-gated UI showing stale/empty state immediately after `/login`
+  * Fixed backgrounding (←←) spuriously cancelling with "N background tasks would be abandoned" when all running tasks carry over to the new session
+  * Fixed pinned background agents being re-prompted to "Continue from where you left off" after every auto-update
+  * Fixed backgrounding the main turn spawning a phantom "general-purpose (resumed)" subagent that re-ran the main conversation
+  * Fixed agent panel hiding sibling agents when viewing a subagent
+  * Improved background agents: the launch result no longer instructs Claude to "end your response" — it keeps working on other tasks while the agent runs
+  * Improved MCP `headersHelper` auth: the helper now re-runs and reconnects automatically when a tool call returns 401/403
+  * Improved plugin auto-rename: marketplace `renames` maps are now followed automatically, updating your settings to the new name
+  * Improved `/add-dir` message when the directory is already a working directory
+</Update>
+
+<Update label="2.1.191" description="June 24, 2026">
+  * Added `/rewind` support for resuming a conversation from before `/clear` was run
+  * Fixed scroll position jumping to the bottom while reading earlier output during a streaming response
+  * Fixed background agents resurrecting after being stopped — stopping an agent from the tasks panel is now permanent
+  * Fixed `/voice` showing a generic "not available" message when disabled by an organization's policy — it now explains the restriction
+  * Fixed `/login` URL opening truncated in Windows Terminal when it wraps across lines
+  * Fixed Cmd+click on links in fullscreen mode for Ghostty over ssh/tmux
+  * Fixed `claude agents` sending builtin slash commands like `/usage` to background sessions as prompt text instead of showing a hint
+  * Fixed `claude agents` job rows showing full filesystem paths for pasted images instead of the `[Image #N]` placeholder
+  * Fixed hooks with comma-separated matchers (e.g. `"Bash,PowerShell"`) silently never firing
+  * Fixed `/permissions` Recently-denied tab: approving a denial now persists on close instead of being silently discarded
+  * Fixed the agent panel jumping by one row when scrolling the roster past the overflow cap
+  * Fixed the welcome splash art overflowing the default 80×24 macOS Terminal window
+  * Fixed managed settings: `forceRemoteSettingsRefresh` now takes effect when set via MDM or file policy, and the fetch sends `Cache-Control: no-cache` to prevent proxies from serving stale responses
+  * Improved sandbox network permission dialog: hosts you allow with "Yes" are now remembered for the rest of the session instead of re-prompting on every connection
+  * Improved MCP server reliability: capability discovery (`tools/list`, `prompts/list`, `resources/list`) now retries transient network errors with short backoff
+  * Improved MCP OAuth: discovery and token requests now retry once after transient network errors, and headless environments skip the browser popup and go straight to the paste-the-URL prompt
+  * Improved MCP error messages: HTTP 404 errors now show the URL and point to your MCP config
+  * Improved vim mode prompt-history search (NORMAL `/`) to hint how to reach slash commands
+  * Reduced CPU usage during streaming responses by \~37% by coalescing text updates to 100ms
+  * Reduced long-session memory growth from terminal output cache
+</Update>
+
 <Update label="2.1.190" description="June 24, 2026">
   * Bug fixes and reliability improvements
 </Update>
