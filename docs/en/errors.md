@@ -51,6 +51,7 @@ Match the message you see in your terminal to a section below.
 | `SSL certificate verification failed`                                                         | [Network](#ssl-certificate-errors)                                                                                            |
 | `SSL certificate error (...)` during login or startup                                         | [Network](#ssl-certificate-errors)                                                                                            |
 | `403` with `x-deny-reason: host_not_allowed` in a cloud or routine session                    | [Network](#host-not-allowed-in-a-cloud-session)                                                                               |
+| `Couldn't reconnect to your Remote Control session`                                           | [Network](#couldn%E2%80%99t-reconnect-to-your-remote-control-session)                                                         |
 | `Prompt is too long`                                                                          | [Request errors](#prompt-is-too-long)                                                                                         |
 | `Error during compaction: Conversation too long`                                              | [Request errors](#error-during-compaction-conversation-too-long)                                                              |
 | `Request too large`                                                                           | [Request errors](#request-too-large)                                                                                          |
@@ -59,13 +60,16 @@ Match the message you see in your terminal to a section below.
 | `PDF too large` / `PDF is password protected`                                                 | [Request errors](#pdf-errors)                                                                                                 |
 | `Extra inputs are not permitted`                                                              | [Request errors](#extra-inputs-are-not-permitted)                                                                             |
 | `There's an issue with the selected model`                                                    | [Request errors](#there%E2%80%99s-an-issue-with-the-selected-model)                                                           |
+| `Model ... is not a recognized model id`                                                      | [Request errors](#model-is-not-a-recognized-model-id)                                                                         |
 | `Claude Opus is not available with the Claude Pro plan`                                       | [Request errors](#claude-opus-is-not-available-with-the-claude-pro-plan)                                                      |
 | `Model ... is restricted by your organization's settings`                                     | [Request errors](#model-is-restricted-by-your-organization%E2%80%99s-settings)                                                |
 | `thinking.type.enabled is not supported for this model`                                       | [Request errors](#thinking-type-enabled-is-not-supported-for-this-model)                                                      |
 | `max_tokens must be greater than thinking.budget_tokens`                                      | [Request errors](#thinking-budget-exceeds-output-limit)                                                                       |
 | `API Error: 400 due to tool use concurrency issues`                                           | [Request errors](#tool-use-or-thinking-block-mismatch)                                                                        |
 | `Claude Code is unable to respond to this request, which appears to violate our Usage Policy` | [Request errors](#usage-policy-refusal)                                                                                       |
+| `Installation was killed before it could finish (exit code 137)`                              | [Installation errors](#installation-was-killed-before-it-could-finish)                                                        |
 | `--bg and --print conflict`                                                                   | [Command-line errors](#command-line-errors)                                                                                   |
+| `Ignoring N permissions.allow entries from ... this workspace has not been trusted`           | [Configuration warnings](#workspace-has-not-been-trusted)                                                                     |
 | Responses seem lower quality than usual                                                       | [Response quality](#responses-seem-lower-quality-than-usual)                                                                  |
 
 ## Automatic retries
@@ -93,7 +97,7 @@ When you see one of the errors on this page, those retries have already been exh
 
 ## Server errors
 
-These errors come from the inference provider rather than your account or request. On the Anthropic API that means Anthropic infrastructure. On Bedrock, Vertex AI, Foundry, or a custom gateway it means that provider's infrastructure.
+These errors come from the inference provider rather than your account or request. On the Anthropic API that means Anthropic infrastructure. On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or a custom gateway it means that provider's infrastructure.
 
 ### API Error: 500 Internal server error
 
@@ -103,7 +107,7 @@ Claude Code shows the status code and the API's error message for any 5xx respon
 API Error: 500 Internal server error. This is a server-side issue, usually temporary — try again in a moment. If it persists, check https://status.claude.com.
 ```
 
-The trailing sentence names where to check service health and varies by provider. Bedrock, Vertex AI, and Foundry configurations name that provider's service status. A custom `ANTHROPIC_BASE_URL` names the gateway host.
+The trailing sentence names where to check service health and varies by provider. Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry configurations name that provider's service status. A custom `ANTHROPIC_BASE_URL` names the gateway host.
 
 This indicates an unexpected failure inside the API. It is not caused by your prompt, settings, or account.
 
@@ -235,7 +239,7 @@ Agent terminated early due to an API error: <error detail>
 * Match the error detail after the colon to its own section on this page, such as [Usage limits](#usage-limits) or [Server errors](#server-errors), and follow that section's steps
 * Once the underlying error clears, ask Claude to retry the task or [resume the subagent](/en/sub-agents#resume-subagents)
 
-When a rate limit, overload, or server error interrupts a foreground subagent that already produced output, Claude receives that partial output marked as incomplete instead of this error. See [API errors in subagents](/en/sub-agents#api-errors-in-subagents).
+When a rate limit, overload, or server error interrupts a foreground subagent that already produced text output, Claude receives that partial output marked as incomplete instead of this error. {/* min-version: 2.1.200 */}A subagent whose only output was tool calls gets this error too; in v2.1.199 that shape returned an empty partial result instead. See [API errors in subagents](/en/sub-agents#api-errors-in-subagents).
 
 ## Usage limits
 
@@ -298,13 +302,13 @@ Claude Code tells these apart from your plan limit by the absence of the unified
 
 ### Request rejected (429)
 
-You have hit the rate limit configured for your API key, Amazon Bedrock project, or Google Vertex AI project.
+You have hit the rate limit configured for your API key, Amazon Bedrock project, or Google Cloud project.
 
 ```text theme={null}
 API Error: Request rejected (429) · this may be a temporary capacity issue. If it persists, check https://status.claude.com.
 ```
 
-The trailing sentence names where to check service health and varies by provider. Bedrock, Vertex AI, and Foundry configurations name that provider's service status instead of the Anthropic status page. A custom `ANTHROPIC_BASE_URL` names the gateway host.
+The trailing sentence names where to check service health and varies by provider. Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry configurations name that provider's service status instead of the Anthropic status page. A custom `ANTHROPIC_BASE_URL` names the gateway host.
 
 **What to do:**
 
@@ -460,7 +464,7 @@ The session isn't talking to the Anthropic API directly, so there is no claude.a
 Remote Control is only available when using Claude via api.anthropic.com.
 ```
 
-This appears on Amazon Bedrock, Google Vertex AI, and Microsoft Foundry. {/* min-version: 2.1.196 */}As of v2.1.196 it also appears when [`ANTHROPIC_BASE_URL`](/en/env-vars) points at a host other than `api.anthropic.com`, such as an [LLM gateway](/en/llm-gateway) or proxy, even when you sign in with claude.ai.
+This appears on Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry. {/* min-version: 2.1.196 */}As of v2.1.196 it also appears when [`ANTHROPIC_BASE_URL`](/en/env-vars) points at a host other than `api.anthropic.com`, such as an [LLM gateway](/en/llm-gateway) or proxy, even when you sign in with claude.ai.
 
 **What to do:**
 
@@ -520,7 +524,7 @@ Without `awsAuthRefresh` configured, the same 401 shows the generic `Please run 
 
 Claude Code can't tell which cause you hit. Amazon Bedrock reports an expired security token as a 403, but a 403 is also how it reports an authorization denial, such as an `AccessDeniedException` from a missing IAM permission or a model that isn't enabled for your account.
 
-A 401 from Amazon Bedrock also lands here rather than under [AWS credentials expired or invalid](#aws-credentials-expired-or-invalid), because Bedrock doesn't report an expired token as a 401. A 401 from that endpoint typically comes from something else in the request path, such as a corporate proxy.
+A 401 from Amazon Bedrock also lands here rather than under [AWS credentials expired or invalid](#aws-credentials-expired-or-invalid), because Amazon Bedrock doesn't report an expired token as a 401. A 401 from that endpoint typically comes from something else in the request path, such as a corporate proxy.
 
 A credential refresh fixes an expired token and can't fix the other causes, so the message offers both:
 
@@ -613,9 +617,25 @@ This is not a client-side network problem. Cloud sessions and [routines](/en/rou
 
 See [Network access](/en/claude-code-on-the-web#network-access) for access levels and the default allowlist. Local CLI sessions are not affected by this policy.
 
+### Couldn't reconnect to your Remote Control session
+
+```text theme={null}
+Couldn't reconnect to your Remote Control session. Retry, or start a fresh session without --resume.
+```
+
+Resuming with `claude --resume` or `claude --continue` reconnects to the [Remote Control](/en/remote-control) session recorded in that conversation. This message means the reconnection failed for a reason that may be temporary, such as a network interruption or a server error, so Claude Code can't confirm whether the remote session still exists. Your local session keeps running without Remote Control.
+
+**What to do:**
+
+* Run `/remote-control` to retry the connection
+* Start Claude Code without `--resume` to create a new Remote Control session
+* For other Remote Control startup messages, see [Troubleshoot Remote Control](/en/remote-control#troubleshooting)
+
+You won't see this message when the server confirms the previous session no longer exists; Claude Code creates a new one in that case. {/* min-version: 2.1.200 */}Before v2.1.200, any reconnection failure created a new Remote Control session, which left extra sessions in the session list at claude.ai/code.
+
 ## Request errors
 
-These errors mean the API received your request but rejected its content.
+These errors relate to the content of your request. Most come back from the API after it rejected the request; a few are produced locally by Claude Code before any request is sent.
 
 ### Prompt is too long
 
@@ -748,7 +768,26 @@ There's an issue with the selected model (claude-...). It may not exist or you m
 * **Agent SDK**: the error text omits the hint because the model is set programmatically. Set [`model` on `Options`](/en/agent-sdk/typescript#options) in TypeScript or [`ClaudeAgentOptions(model=...)`](/en/agent-sdk/python#claudeagentoptions) in Python, and handle the structured `model_not_found` error to surface your own retry or model picker.
 * Use an alias such as `sonnet` or `opus` instead of a full versioned ID. Aliases resolve to a maintained default so they don't go stale. See [Model configuration](/en/model-config).
 * If the wrong model keeps coming back in the CLI, a stale ID is set somewhere. Check in [priority order](/en/model-config#setting-your-model): the `--model` flag, the `ANTHROPIC_MODEL` environment variable, then the `model` field in `.claude/settings.local.json`, your project's `.claude/settings.json`, and `~/.claude/settings.json`. Remove the stale value and Claude Code falls back to your account default.
-* For Vertex AI deployments, see [Vertex AI troubleshooting](/en/google-vertex-ai#troubleshooting).
+* For Google Cloud's Agent Platform deployments, see [Google Cloud's Agent Platform troubleshooting](/en/google-vertex-ai#troubleshooting).
+
+### Model is not a recognized model id
+
+The model string you passed to a model switch isn't a model alias, a model ID this Claude Code version knows, or an ID that starts with `claude-`. The usual causes are a typo in the ID, a display name such as `Sonnet 5` where the ID `claude-sonnet-5` is expected, or an alias that only newer Claude Code versions recognize. Claude Code rejects the switch immediately. Before v2.1.200, Claude Code saved the string and failed on the next request with [There's an issue with the selected model](#there%E2%80%99s-an-issue-with-the-selected-model).
+
+```text theme={null}
+Model "claud-sonnet-5" is not a recognized model id. Did you mean 'claude-sonnet-5'?
+```
+
+The trailing hint names the closest matching alias or model ID. When nothing is close enough, it reads `Run /model to see available models.` instead.
+
+Claude Code produces this error locally at the moment the switch is requested, before any API request is made. It applies when a model is set through the [Agent SDK](/en/agent-sdk/typescript) `setModel()` method or by an app such as the [Desktop app](/en/desktop) that runs the Claude Code CLI for you.
+
+**What to do:**
+
+* Run `/model` with no argument to open the picker and choose from the models available to your account, then pass the alias or ID shown there
+* If you used an alias that a newer Claude Code version supports, run `claude update`. A full ID that starts with `claude-` passes this check even when the model is newer than your Claude Code version, so upgrading isn't needed for those.
+* A model saved before v2.1.200 isn't repaired by this check. If a stale value keeps coming back, remove it from the locations listed under [There's an issue with the selected model](#there%E2%80%99s-an-issue-with-the-selected-model).
+* The check runs only on the Anthropic API. On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, [Claude Platform on AWS](/en/claude-platform-on-aws), and behind an [LLM gateway](/en/llm-gateway) or a custom `ANTHROPIC_BASE_URL`, your provider or gateway defines the model names, so Claude Code accepts any string and passes it through.
 
 ### Claude Opus is not available with the Claude Pro plan
 
@@ -800,7 +839,7 @@ The configured extended thinking budget exceeds the maximum response length, so 
 API Error: 400 ... max_tokens must be greater than thinking.budget_tokens
 ```
 
-Claude Code adjusts these values automatically on the Anthropic API. You typically see this error on Amazon Bedrock or Google Vertex AI when [`MAX_THINKING_TOKENS`](/en/env-vars) is set higher than the provider's output limit, or when plan mode raises the thinking budget.
+Claude Code adjusts these values automatically on the Anthropic API. You typically see this error on Amazon Bedrock or Google Cloud's Agent Platform when [`MAX_THINKING_TOKENS`](/en/env-vars) is set higher than the provider's output limit, or when plan mode raises the thinking budget.
 
 **What to do:**
 
@@ -840,6 +879,26 @@ The check evaluates the full conversation, not only your latest prompt, so sendi
 * If you can't identify which turn caused it, run `/clear` to start a fresh conversation in the same project. Your previous conversation is preserved on disk and remains available in `/resume`.
 * In [non-interactive mode](/en/headless) (`-p`), where rewind is unavailable, retry with a rephrased prompt in a new session without `--continue`. Policy checks vary by model, so switching to a different model with `--model` may also resolve the refusal in some cases.
 
+## Installation errors
+
+These errors come from the [install script](/en/setup#install-claude-code) before Claude Code has started. For `command not found`, PATH, permission, and TLS problems during setup, see [Troubleshoot installation and login](/en/troubleshoot-install).
+
+### Installation was killed before it could finish
+
+The install script reports when the `claude install` step is terminated by a signal. On Linux, exit code 137 means the process received SIGKILL, and on a low-memory host that's usually the kernel out-of-memory (OOM) killer. The script prints this explanation and exits with code 137:
+
+```text theme={null}
+Installation was killed before it could finish (exit code 137). This usually means the system ran out of memory.
+Claude Code needs roughly 512MB of free memory to install. Free up memory, then run this script again.
+```
+
+For any other fatal signal, and for exit code 137 on macOS, the script prints `Installation was killed before it could finish (exit code <N>)` with the actual exit code and omits the out-of-memory explanation. The message comes from the install script macOS and Linux use, which also covers installs inside WSL; the native Windows install scripts never print it. Before v2.1.200, the script exited with only the shell's bare `Killed` line.
+
+**What to do:**
+
+* Stop other processes to free memory, then rerun the installer
+* Add swap space or move to a larger instance. See [Install killed on low-memory Linux servers](/en/troubleshoot-install#install-killed-on-low-memory-linux-servers) for the swap-file commands.
+
 ## Command-line errors
 
 These errors come from Claude Code's own validation of the `claude` command line. Claude Code prints them immediately, before it creates a session or sends any API request.
@@ -857,12 +916,30 @@ This message requires Claude Code v2.1.198 or later. You combined `--bg` with `-
 * Drop `-p` or `--print`. `--bg` takes the prompt as its positional argument, so `claude --bg "<task>"` is the complete command. See [Dispatch new agents from your shell](/en/agent-view#from-your-shell).
 * To run the prompt non-interactively and print the result instead of creating a background session, drop `--bg` and run `claude -p "<task>"`
 
+## Configuration warnings
+
+Claude Code writes these messages to stderr at startup rather than showing an error in the conversation. They report configuration it read but didn't apply.
+
+### Workspace has not been trusted
+
+Claude Code found `permissions.allow` rules or `permissions.additionalDirectories` entries in the project's `.claude/settings.json` or `.claude/settings.local.json` and didn't apply them, because [allow rules from project settings require workspace trust](/en/permissions#project-allow-rules-and-workspace-trust). The count, the setting name, and the file named in the message vary with your configuration. `deny` and `ask` rules aren't affected.
+
+```text theme={null}
+Ignoring 2 permissions.allow entries from .claude/settings.local.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects["/Users/you/project"].hasTrustDialogAccepted: true in /Users/you/.claude.json.
+```
+
+**What to do:**
+
+* Run `claude` in the directory and accept the trust dialog. {/* min-version: 2.1.200 */}The dialog appears even when a parent directory is already trusted, lists the rules being held back, and lets you decline and keep working without them. Before v2.1.200, no dialog appeared in that situation, so this step couldn't be completed there.
+* In [non-interactive mode](/en/headless) with `-p` no dialog is shown. Set the `hasTrustDialogAccepted` entry in `~/.claude.json` using the exact `projects` key the message prints.
+* {/* min-version: 2.1.200 */}If the message names `.claude/settings.local.json` and you started Claude Code outside a git repository or in your home directory, update to v2.1.200 or later. Versions 2.1.196 through 2.1.199 treated your own `.claude/settings.local.json` as repository-supplied in those workspaces. See [Project allow rules and workspace trust](/en/permissions#project-allow-rules-and-workspace-trust).
+
 ## Responses seem lower quality than usual
 
 If Claude's answers seem less capable than you expect but no error is shown, the cause is usually conversation state rather than the model itself. Claude Code doesn't silently change model versions. It can switch to a fallback model in three specific cases:
 
 * A configured [`--fallback-model`](/en/cli-reference#cli-flags) takes over after an availability error, for that turn only, with a notice in the transcript
-* A Bedrock or Vertex AI startup check finds your default model unavailable
+* An Amazon Bedrock or Google Cloud's Agent Platform startup check finds your default model unavailable
 * [Automatic model fallback](/en/model-config#automatic-model-fallback) on Fable 5 moves the session to the default Opus model and shows a notice in the transcript
 
 The Model selection check below catches the second and third cases; the first appears as a transcript notice rather than a `/model` change. [Model configuration](/en/model-config) explains when each fallback applies.
@@ -888,7 +965,7 @@ For errors from components this page doesn't cover, see the relevant guide:
 
 If an error is not listed here or the suggested fix does not help:
 
-* Run `/feedback` inside Claude Code to send the transcript and a description to Anthropic. The command also offers to open a prefilled GitHub issue. On Bedrock, Vertex AI, Foundry, and other third-party providers, `/feedback` saves a local archive you can send to your Anthropic account representative instead.
+* Run `/feedback` inside Claude Code to send the transcript and a description to Anthropic. The command also offers to open a prefilled GitHub issue. On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and other third-party providers, `/feedback` saves a local archive you can send to your Anthropic account representative instead.
 * Run `/doctor` to check for local configuration problems
 * Check [status.claude.com](https://status.claude.com) for active incidents
 * Search [existing issues](https://github.com/anthropics/claude-code/issues) on GitHub
