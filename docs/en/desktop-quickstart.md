@@ -36,7 +36,7 @@ The desktop app has three tabs:
 * **Cowork**: An autonomous background agent that works on tasks in a cloud VM with its own environment. It can run independently while you do other work.
 * **Code**: An interactive coding assistant with direct access to your local files. You review and approve each change in real time.
 
-Chat and Cowork are covered in the [Claude Desktop support articles](https://support.claude.com/en/collections/16163169-claude-desktop). This page focuses on the **Code** tab.
+Chat and Cowork are covered in the [Claude Help Center](https://support.claude.com/); installing and deploying the desktop app is covered in the [Claude Desktop support articles](https://support.claude.com/en/collections/16163169-claude-desktop). This page focuses on the **Code** tab.
 
 ## Install
 
@@ -68,6 +68,7 @@ With the Code tab open, choose a project and give Claude something to do.
 
     * **Remote**: Run sessions on Anthropic's cloud infrastructure that continue even if you close the app. Cloud sessions use the same infrastructure as [Claude Code on the web](/en/claude-code-on-the-web).
     * **SSH**: Connect to a remote machine over SSH, such as your own servers, cloud VMs, or dev containers. Desktop installs Claude Code on the remote machine automatically the first time you connect.
+    * **WSL** (Windows): Run the session inside a [WSL 2 distribution](/en/desktop-wsl); Claude Code, tools, and git execute on the Linux side with native paths.
   </Step>
 
   <Step title="Choose a model">
