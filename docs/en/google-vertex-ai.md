@@ -100,7 +100,7 @@ If you have Google Cloud credentials and want to start using Claude Code through
   </Step>
 
   <Step title="Start Claude Code and choose Google Cloud's Agent Platform">
-    Run `claude`. At the login prompt, select **3rd-party platform**, then **Google Vertex AI**, the label the login prompt still uses for Google Cloud's Agent Platform.
+    Run `claude`. At the login prompt, select **3rd-party platform**, then **Google Vertex AI**, the label the login prompt still uses for Google Cloud's Agent Platform. If you're already signed in, run `/login` to open the same menu.
   </Step>
 
   <Step title="Follow the wizard prompts">
@@ -124,7 +124,7 @@ To configure Google Cloud's Agent Platform through environment variables instead
 
 ### 1. Enable Agent Platform API
 
-Enable Google Cloud's Agent Platform API in your GCP project:
+Enable Google Cloud's Agent Platform API in your GCP project. Replace `YOUR-PROJECT-ID` with your GCP project ID here and in the configuration step below:
 
 ```bash theme={null}
 # Set your project ID
@@ -157,7 +157,7 @@ Claude Code v2.1.121 or later supports [X.509 certificate-based Workload Identit
 
 #### Advanced credential configuration
 
-Claude Code supports automatic credential refresh for GCP through the `gcpAuthRefresh` setting. When Claude Code detects that your GCP credentials are expired or cannot be loaded, it runs the configured command to obtain new credentials before retrying the request.
+Claude Code supports automatic credential refresh for GCP through the `gcpAuthRefresh` setting. Add it to your Claude Code [settings file](/en/settings), for example `~/.claude/settings.json`. When Claude Code detects that your GCP credentials are expired or cannot be loaded, it runs the configured command to obtain new credentials before retrying the request.
 
 ```json theme={null}
 {
@@ -184,10 +184,10 @@ export ANTHROPIC_VERTEX_PROJECT_ID=YOUR-PROJECT-ID
 # export ANTHROPIC_VERTEX_BASE_URL=https://aiplatform.googleapis.com
 
 # Optional: Disable prompt caching if needed
-export DISABLE_PROMPT_CACHING=1
+# export DISABLE_PROMPT_CACHING=1
 
 # Optional: Request 1-hour prompt cache TTL instead of the 5-minute default
-export ENABLE_PROMPT_CACHING_1H=1
+# export ENABLE_PROMPT_CACHING_1H=1
 
 # When CLOUD_ML_REGION=global, override region for models that don't support global endpoints
 export VERTEX_REGION_CLAUDE_HAIKU_4_5=us-east5
@@ -243,6 +243,10 @@ export ANTHROPIC_MODEL='claude-opus-4-8'
 export ANTHROPIC_DEFAULT_HAIKU_MODEL='claude-haiku-4-5@20251001'
 ```
 
+### 6. Verify your configuration
+
+Start Claude Code and run `/status` to confirm the setup. The `API provider` line shows `Google Vertex AI`, and the `GCP project`, `Default region`, and `Model` lines show your project ID, region, and resolved model. If the provider line is missing, the environment variables aren't reaching the process. Confirm they are exported in the shell where you launched `claude`, or set them in the `env` block of your [settings file](/en/settings).
+
 ## Startup model checks
 
 When Claude Code starts with Google Cloud's Agent Platform configured, it verifies that the models it intends to use are accessible in your project.
@@ -250,6 +254,12 @@ When Claude Code starts with Google Cloud's Agent Platform configured, it verifi
 If you have pinned a model version that is older than the current Claude Code default, and your project can invoke the newer version, Claude Code prompts you to update the pin. Accepting writes the new model ID to your [user settings file](/en/settings) and restarts Claude Code. Declining is remembered until the next default version change.
 
 If you have not pinned a model and the current default is unavailable in your project, Claude Code falls back for the current session and shows a notice. It tries earlier versions of the default model first and, when the default is an Opus model and no Opus version is available, falls back to the default Sonnet model. The fallback is not persisted. Enable the newer model in [Model Garden](https://console.cloud.google.com/vertex-ai/model-garden) or [pin a version](#5-pin-model-versions) to make the choice permanent.
+
+{/* min-version: 2.1.211 */}When you start the session on a specific Sonnet or Opus version, with `--model`, `ANTHROPIC_MODEL`, or the [`model` setting](/en/settings), that version acts as the session's pinned default for the matching `sonnet` or `opus` alias. Claude Code skips the availability check for the built-in default your model replaces and starts on the model you configured, with no fallback notice.
+
+Model aliases such as `opus` don't act as pins, and neither does a model ID Claude Code doesn't recognize.
+
+<Info>Before v2.1.211, Claude Code checked the default model's availability even when a session model was explicitly configured, and could show a fallback notice for a default the session didn't use.</Info>
 
 ## IAM configuration
 

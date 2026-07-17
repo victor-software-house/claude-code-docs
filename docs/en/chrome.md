@@ -11,7 +11,7 @@ Claude Code integrates with the [Claude in Chrome browser extension](https://chr
 Claude opens new tabs for browser tasks and shares your browser's login state, so it can access any site you're already signed into. Browser actions run in a visible Chrome window in real time. When Claude encounters a login page or CAPTCHA, it pauses and asks you to handle it manually.
 
 <Note>
-  Chrome integration works with Google Chrome and Microsoft Edge. It isn't yet supported on Brave, Arc, or other Chromium-based browsers. It also isn't supported in Windows Subsystem for Linux (WSL).
+  Chrome integration works with Google Chrome and Microsoft Edge. Claude Code also detects the extension and sets up the connection in other Chromium-based browsers, including Brave, Arc, Vivaldi, and Opera. Chrome integration isn't supported in Windows Subsystem for Linux (WSL).
 </Note>
 
 ## Capabilities
@@ -24,14 +24,15 @@ With Chrome connected, you can chain browser actions with coding tasks in a sing
 * **Authenticated web apps**: interact with Google Docs, Gmail, Notion, or any app you're logged into without API connectors
 * **Data extraction**: pull structured information from web pages and save it locally
 * **Task automation**: automate repetitive browser tasks like data entry, form filling, or multi-site workflows
+* **File uploads**: attach files from your machine to upload fields on web pages
 * **Session recording**: record browser interactions as GIFs to document or share what happened
 
 ## Prerequisites
 
 Before using Claude Code with Chrome, you need:
 
-* [Google Chrome](https://www.google.com/chrome/) or [Microsoft Edge](https://www.microsoft.com/edge) browser
-* [Claude in Chrome extension](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn) version 1.0.36 or higher, available in the Chrome Web Store for both browsers
+* [Google Chrome](https://www.google.com/chrome/), [Microsoft Edge](https://www.microsoft.com/edge), or another Chromium-based browser such as Brave, Arc, Vivaldi, or Opera
+* [Claude in Chrome extension](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn) version 1.0.36 or higher, available in the Chrome Web Store
 * [Claude Code](/en/quickstart#step-1-install-claude-code)
 * A direct Anthropic plan (Pro, Max, Team, or Enterprise)
 
@@ -49,7 +50,9 @@ Before using Claude Code with Chrome, you need:
     claude --chrome
     ```
 
-    You can also enable Chrome from within an existing session by running `/chrome`.
+    The first time you launch with Chrome, Claude Code shows a one-time dialog that introduces the integration and explains how site permissions work. Press Enter to continue.
+
+    To enable Chrome for future sessions without the flag, see [Enable Chrome by default](#enable-chrome-by-default).
   </Step>
 
   <Step title="Ask Claude to use the browser">
@@ -64,13 +67,15 @@ Before using Claude Code with Chrome, you need:
   </Step>
 </Steps>
 
-Run `/chrome` at any time to check the connection status, manage permissions, reconnect the extension, or choose which connected browser to use. If more than one browser is connected when a browser action starts, Claude prompts you to pick one.
+Run `/chrome` at any time to check the connection status, manage permissions, reconnect the extension, or choose which connected browser to use. The integration is working when the status panel shows "Status: Enabled" and "Extension: Installed". If more than one browser is connected when a browser action starts, Claude prompts you to pick one.
 
 For VS Code, see [browser automation in VS Code](/en/vs-code#automate-browser-tasks-with-chrome).
 
 ### Enable Chrome by default
 
 To avoid passing `--chrome` each session, run `/chrome` and select "Enabled by default".
+
+Claude Code starts normally when Chrome isn't running. Before v2.1.211, startup could hang when Chrome integration was enabled but Chrome wasn't running.
 
 In the [VS Code extension](/en/vs-code#automate-browser-tasks-with-chrome), Chrome is available whenever the Chrome extension is installed. No additional flag is needed.
 
@@ -130,6 +135,23 @@ name, email, and phone fields.
 
 Claude reads your local file, navigates the web interface, and enters the data for each record.
 
+### Upload files to web pages
+
+Claude can attach files from your machine to upload fields on a page. Claude Code reads the file and sends its contents to the browser, so uploads work in both local and remote sessions. Requires Claude Code v2.1.211 or later.
+
+This example attaches a log file to a form:
+
+```text theme={null}
+Open the bug tracker at bugs.example.com, create a new issue,
+and attach logs/session.log to it
+```
+
+Three restrictions apply to uploads:
+
+* **Permissions**: Claude can upload a file only when the session is allowed to read it, so [permission rules](/en/settings#permission-settings) that deny `Read` access to a file also block uploading it.
+* **Size**: a single upload can include up to 10 MB of files in total.
+* **Hard links**: Claude refuses files that have multiple hard links, which is common inside package-manager stores like `node_modules`. Copy the file and upload the copy.
+
 ### Draft content in Google Docs
 
 Use Claude to write directly in your documents without API setup:
@@ -175,6 +197,16 @@ an item to the cart through to the confirmation page.
 
 Claude records the interaction sequence and saves it as a GIF file.
 
+### Save screenshots to disk
+
+Ask Claude to keep a screenshot as a file:
+
+```text theme={null}
+Take a screenshot of the checkout page and save it to disk
+```
+
+Claude saves the image to disk and reports the file path. Before v2.1.211, the screenshot tool's `save_to_disk` option didn't write a file.
+
 ## Troubleshooting
 
 ### Extension not detected
@@ -205,6 +237,8 @@ For Edge:
 * **Linux**: `~/.config/microsoft-edge/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json`
 * **Windows**: check `HKCU\Software\Microsoft\Edge\NativeMessagingHosts\` in the Windows Registry
 
+Other Chromium-based browsers read the same file from their own configuration directory, named after the browser. For example, Brave on macOS uses `~/Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts/`, and on Windows each browser has its own registry key, such as `HKCU\Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\`.
+
 ### Browser not responding
 
 If Claude's browser commands stop working:
@@ -223,17 +257,18 @@ On Windows, you may encounter:
 
 * **Named pipe conflicts (EADDRINUSE)**: if another process is using the same named pipe, restart Claude Code. Close any other Claude Code sessions that might be using Chrome.
 * **Native messaging host errors**: if the native messaging host crashes on startup, try reinstalling Claude Code to regenerate the host configuration.
+* **Setup pages fail to open**: {/* min-version: 2.1.211 */}update Claude Code. Before v2.1.211, the browser tab prompting you to connect the extension could fail to open on Windows.
 
 ### Common error messages
 
 These are the most frequently encountered errors and how to resolve them:
 
-| Error                                | Cause                                            | Fix                                                             |
-| ------------------------------------ | ------------------------------------------------ | --------------------------------------------------------------- |
-| "Browser extension is not connected" | Native messaging host cannot reach the extension | Restart Chrome and Claude Code, then run `/chrome` to reconnect |
-| "Extension not detected"             | Chrome extension is not installed or is disabled | Install or enable the extension in `chrome://extensions`        |
-| "No tab available"                   | Claude tried to act before a tab was ready       | Ask Claude to create a new tab and retry                        |
-| "Receiving end does not exist"       | Extension service worker went idle               | Run `/chrome` and select "Reconnect extension"                  |
+| Error                                       | Cause                                            | Fix                                                             |
+| ------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
+| "Browser extension is not connected"        | Native messaging host cannot reach the extension | Restart Chrome and Claude Code, then run `/chrome` to reconnect |
+| Extension shows "Not detected" in `/chrome` | Chrome extension is not installed or is disabled | Install or enable the extension in `chrome://extensions`        |
+| "No tab available"                          | Claude tried to act before a tab was ready       | Ask Claude to create a new tab and retry                        |
+| "Receiving end does not exist"              | Extension service worker went idle               | Run `/chrome` and select "Reconnect extension"                  |
 
 ## See also
 

@@ -99,7 +99,7 @@ If you have AWS credentials and want to start using Claude Code through Amazon B
   </Step>
 
   <Step title="Start Claude Code and choose Amazon Bedrock">
-    Run `claude`. At the login prompt, select **3rd-party platform**, then **Amazon Bedrock**.
+    Run `claude`. At the login prompt, select **3rd-party platform**, then **Amazon Bedrock**. If you're already signed in and see the chat prompt instead, run `/setup-bedrock` to open the wizard. The command works when typed even though it isn't listed in the command menu until Bedrock is configured.
   </Step>
 
   <Step title="Follow the wizard prompts">
@@ -302,10 +302,10 @@ export ANTHROPIC_DEFAULT_HAIKU_MODEL='us.anthropic.claude-haiku-4-5-20251001-v1:
 export ANTHROPIC_MODEL='arn:aws:bedrock:us-east-2:your-account-id:application-inference-profile/your-model-id'
 
 # Optional: Disable prompt caching if needed
-export DISABLE_PROMPT_CACHING=1
+# export DISABLE_PROMPT_CACHING=1
 
 # Optional: Request 1-hour prompt cache TTL instead of the 5-minute default
-export ENABLE_PROMPT_CACHING_1H=1
+# export ENABLE_PROMPT_CACHING_1H=1
 ```
 
 The 1-hour cache TTL is billed at a higher rate than the 5-minute default. See [cache lifetime](/en/prompt-caching#cache-lifetime).
@@ -338,6 +338,12 @@ When Claude Code starts with Amazon Bedrock configured, it verifies that the mod
 If you have pinned a model version that is older than the current Claude Code default, and your account can invoke the newer version, Claude Code prompts you to update the pin. Accepting writes the new model ID to your [user settings file](/en/settings) and restarts Claude Code. Declining is remembered until the next default version change. Pins that point to an [application inference profile ARN](#map-each-model-version-to-an-inference-profile) are skipped, since those are managed by your administrator.
 
 If you have not pinned a model and the current default is unavailable in your account, Claude Code falls back for the current session and shows a notice. It tries earlier versions of the default model first and, when the default is an Opus model and no Opus version is available, falls back to the default Sonnet model. The fallback is not persisted. Enable the newer model in your Amazon Bedrock account or [pin a version](#4-pin-model-versions) to make the choice permanent.
+
+{/* min-version: 2.1.211 */}When you start the session on a specific Sonnet or Opus version, with `--model`, `ANTHROPIC_MODEL`, or the [`model` setting](/en/settings), that version acts as the session's pinned default for the matching `sonnet` or `opus` alias. Claude Code skips the availability check for the built-in default your model replaces and starts on the model you configured, with no fallback notice.
+
+Model aliases such as `opus` don't act as pins, and neither does a model ID Claude Code doesn't recognize, such as an application inference profile ARN.
+
+<Info>Before v2.1.211, Claude Code checked the default model's availability even when a session model was explicitly configured, and could show a fallback notice for a default the session didn't use.</Info>
 
 ## IAM configuration
 
@@ -541,5 +547,5 @@ A `400` that names the model ID means that model is not served on Mantle. Mantle
 * [Amazon Bedrock pricing](https://aws.amazon.com/bedrock/pricing/)
 * [Amazon Bedrock inference profiles](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html)
 * [Amazon Bedrock token burndown and quotas](https://docs.aws.amazon.com/bedrock/latest/userguide/quotas-token-burndown.html)
-* [Claude Code on Amazon Bedrock: Quick Setup Guide](https://community.aws/content/2tXkZKrZzlrlu0KfH8gST5Dkppq/claude-code-on-amazon-bedrock-quick-setup-guide)
+* [Claude Code on Amazon Bedrock: Quick Setup Guide](https://builder.aws.com/content/2tXkZKrZzlrlu0KfH8gST5Dkppq/claude-code-on-amazon-bedrock-quick-setup-guide)
 * [Claude Code Monitoring Implementation (Amazon Bedrock)](https://github.com/aws-solutions-library-samples/guidance-for-claude-code-with-amazon-bedrock/blob/main/assets/docs/MONITORING.md)
