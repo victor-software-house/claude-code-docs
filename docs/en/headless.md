@@ -18,7 +18,7 @@ This page covers using the Agent SDK via the CLI (`claude -p`). For the Python a
 
 ## Basic usage
 
-Add the `-p` (or `--print`) flag to any `claude` command to run it non-interactively. Not every [CLI option](/docs/en/cli-reference) combines with `-p`. Claude Code rejects `--bg` and `--cloud` with an error naming the conflict. Options you'll combine with `-p` often include:
+Add the `-p` (or `--print`) flag to any `claude` command to run it non-interactively. Not every [CLI option](/docs/en/cli-reference) combines with `-p`. Claude Code rejects `--bg`, and rejects `--cloud` with a task description, with an error naming the conflict; `--cloud` with a session ID and `-p` instead [queues a message into that cloud session](/docs/en/claude-code-on-the-web#send-follow-ups-from-the-cli) and exits. Options you'll combine with `-p` often include:
 
 * `--continue` for [continuing conversations](#continue-conversations)
 * `--allowedTools` for [auto-approving tools](#auto-approve-tools)
@@ -85,7 +85,7 @@ cat build-error.txt | claude -p 'concisely explain the root cause of this build 
 With `--output-format json`, the response payload includes `total_cost_usd` and a per-model cost breakdown, so scripted callers can track spend per invocation without consulting the [usage dashboard](/docs/en/costs).
 
 <Note>
-  As of Claude Code v2.1.128, piped stdin is capped at 10MB. If you exceed the cap, Claude Code exits with a clear error and a non-zero status. To work with larger inputs, write the content to a file and reference the file path in your prompt instead of piping it.
+  Piped stdin is capped at 10MB. If you exceed the cap, Claude Code exits with a clear error and a non-zero status. To work with larger inputs, write the content to a file and reference the file path in your prompt instead of piping it.
 </Note>
 
 If Claude Code can't read stdin, for example because the process that started it disconnected its end, Claude Code prints a warning to stderr and continues with the prompt from the command line. Before v2.1.211, an unreadable stdin on Windows crashed the session or made it exit silently with no output.
@@ -301,7 +301,7 @@ session_id=$(claude -p "Start a review" --output-format json | jq -r '.session_i
 claude -p "Continue that review" --resume "$session_id"
 ```
 
-Run both commands from the same directory: session ID lookup is scoped to the current project directory and its git worktrees. See [Resume a session](/docs/en/sessions#resume-a-session) for the full scope rules.
+You can run the two commands from different directories: Claude Code [finds the session by its ID](/docs/en/sessions#resume-a-session) in any project on this machine. Before v2.1.223, Claude Code looked for the ID only in the current project directory and its git worktrees, so you had to run both commands from the same directory.
 
 ## Next steps
 
