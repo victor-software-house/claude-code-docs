@@ -10,7 +10,7 @@ A plugin can depend on other plugins by listing them in `plugin.json` or in its 
 
 When you install a plugin that declares dependencies, Claude Code resolves and installs them automatically. If a dependency later goes missing, `/reload-plugins` and the background plugin auto-update reinstall it, provided its marketplace is already in your configured marketplaces. Re-running `claude plugin install` on the dependent plugin, or adding a marketplace with `claude plugin marketplace add`, also resolves any outstanding missing dependencies. Dependencies from a marketplace you have not added are left unresolved.
 
-This guide is for plugin authors who declare dependencies in `plugin.json` and for marketplace maintainers who tag releases. To install plugins that have dependencies, see [Discover and install plugins](/docs/en/discover-plugins). For the full manifest schema, see the [Plugins reference](/docs/en/plugins-reference).
+This guide is for plugin authors who declare dependencies in `plugin.json` and for marketplace maintainers who tag releases. Dependencies here are other plugins; for the npm and Bun packages a plugin itself uses, see [Node.js package dependencies](/docs/en/plugins-reference#node-js-package-dependencies). To install plugins that have dependencies, see [Discover and install plugins](/docs/en/discover-plugins). For the full manifest schema, see the [Plugins reference](/docs/en/plugins-reference).
 
 ## Why constrain dependency versions
 
@@ -124,7 +124,7 @@ Running `git tag secrets-vault--v2.1.0` directly is equivalent if you keep `plug
 
 The plugin name prefix lets one marketplace repository host multiple plugins with independent version lines. The `--v` separator is parsed as a prefix match on the full plugin name, so plugin names that contain hyphens are handled correctly.
 
-When you install a plugin that declares `{ "name": "secrets-vault", "version": "~2.1.0" }`, Claude Code lists the tags on the repository that hosts `secrets-vault`, filters to those starting with `secrets-vault--v`, and fetches the highest version satisfying `~2.1.0`. If no tag on the plugin's own repository satisfies the range, the install fails with `Dependency "secrets-vault" has no git tag satisfying ~2.1.0`. For a relative-path plugin with no matching tag, Claude Code installs the marketplace's current copy instead and checks the constraint when the plugin loads.
+When you install a plugin that declares `{ "name": "secrets-vault", "version": "~2.1.0" }`, Claude Code lists the tags on the repository that hosts `secrets-vault`, filters to those starting with `secrets-vault--v`, and fetches the highest version satisfying `~2.1.0`. If no tag on the plugin's own repository satisfies the range, the install fails with `Dependency "secrets-vault@acme-tools" has no git tag satisfying ~2.1.0`, which names the dependency together with its marketplace. For a relative-path plugin with no matching tag, Claude Code installs the marketplace's current copy instead and checks the constraint when the plugin loads.
 
 For a plugin the marketplace references by a relative path, a marketplace added as a local folder path resolves tags the same way when the folder is a git repository. This requires Claude Code v2.1.196 or later. In two cases Claude Code installs the dependency from the folder's current contents instead:
 
