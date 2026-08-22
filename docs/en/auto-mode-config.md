@@ -36,7 +36,7 @@ If you want a human checkpoint before every push or pull request, add permission
 
 ### Add a human checkpoint
 
-The most direct mechanism is [`permissions.ask`](/docs/en/permissions#permission-rule-syntax). Content-scoped ask rules like the ones below are evaluated before the classifier and always force a permission prompt, even in auto mode, because an explicit ask rule is your stated intent to be prompted for that action. Add the rules in your [settings](/docs/en/settings#settings-files):
+The most direct mechanism is [`permissions.ask`](/docs/en/permissions#permission-rule-syntax). Content-scoped ask rules like the ones below are evaluated before the classifier and always force a permission prompt, even in auto mode, because an explicit ask rule is your stated intent to be prompted for that action. Add the rules in your [settings](/docs/en/settings#where-settings-live):
 
 ```json theme={null}
 {
@@ -221,7 +221,7 @@ Only omit `"$defaults"` when you intend to take full ownership of the list. To d
 
 ## Route all shell commands through the classifier
 
-By default, narrow Bash and PowerShell allow rules such as `Bash(npm test)` carry over into auto mode and resolve before the classifier runs. Auto mode suspends only the broad rules that grant arbitrary code execution, such as `Bash(*)` or wildcarded interpreters. This means a narrow rule can still let a destructive argument through without the classifier seeing it, for example a script path or flag the rule's prefix didn't anticipate.
+By default, narrow Bash and PowerShell allow rules such as `Bash(npm test)` stay in effect in auto mode, and Claude Code resolves them before the classifier runs. Claude Code suspends only the broad rules that grant arbitrary code execution, such as `Bash(*)` or wildcarded interpreters, together with every rule that names [`Monitor`](/docs/en/tools-reference#monitor-tool), because Monitor commands run through the shell. This means a narrow rule can still let a destructive argument through without the classifier seeing it, for example a script path or flag the rule's prefix didn't anticipate.
 
 Set `autoMode.classifyAllShell` to `true` to suspend every Bash and PowerShell allow rule while auto mode is active, so the classifier evaluates every shell command regardless of your allow list.
 
@@ -324,4 +324,4 @@ To react to denials programmatically, use the [`PermissionDenied` hook](/docs/en
 * [Permission modes](/docs/en/permission-modes#eliminate-prompts-with-auto-mode): what auto mode is, what it blocks by default, and which sessions start in it
 * [Managed settings](/docs/en/server-managed-settings): deploy `autoMode` configuration across your organization
 * [Permissions](/docs/en/permissions): allow, ask, and deny rules that apply before the classifier runs
-* [Settings](/docs/en/settings): the full settings reference, including the `autoMode` key
+* [Settings reference](/docs/en/settings-reference#automode): every settings key, including `autoMode`

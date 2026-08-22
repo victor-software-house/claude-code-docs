@@ -64,7 +64,7 @@ Setup is a one-time process. If you already use the GitHub CLI, you can [do this
   </Step>
 
   <Step title="Confirm your Default environment">
-    When you finish connecting GitHub, onboarding creates a [cloud environment](/docs/en/cloud-environments) named **Default** for you; if onboarding shows an environment form instead, keep its defaults to create the same **Default** environment. The environment controls what network access Claude has during sessions and what runs when a new session is created. **Default** uses [`Trusted` network access](/docs/en/cloud-environments#access-levels): sessions reach [common package registries](/docs/en/cloud-environments#default-allowed-domains) and other allowlisted domains, and nothing else through the session's network. See [Installed tools](/docs/en/cloud-environments#installed-tools) for what's available without any configuration.
+    If you don't have an environment yet, onboarding creates a [cloud environment](/docs/en/cloud-environments) named **Default** for you when you finish connecting GitHub; if onboarding shows an environment form instead, keep its defaults to create the same **Default** environment. The environment controls what network access Claude has during sessions and what runs when a new session is created. **Default** uses [`Trusted` network access](/docs/en/cloud-environments#access-levels): sessions reach [common package registries](/docs/en/cloud-environments#default-allowed-domains) and other allowlisted domains, and nothing else through the session's network. See [Installed tools](/docs/en/cloud-environments#installed-tools) for what's available without any configuration.
 
     For a first project, the **Default** environment works as is. To change its network access, add environment variables, or run a [setup script](/docs/en/cloud-environments#setup-scripts) before sessions start, [edit it or create additional environments](/docs/en/cloud-environments#configure-your-environment).
   </Step>
@@ -189,7 +189,9 @@ Enterprise organizations may need an Owner to enable Claude Code on the web. Con
 
 If `/web-setup` responds with "Not signed in to Claude. Run /login first.", the CLI doesn't have a valid claude.ai sign-in. This can also happen when a previous sign-in has expired. Run `/login`, sign in with your claude.ai account, then run `/web-setup` again.
 
-### `/web-setup` shows "No commands match" or "Unknown command"
+<h3 id="web-setup-shows-no-commands-match-or-unknown-command">
+  `/web-setup` shows "No commands match" or "Unknown command"
+</h3>
 
 `/web-setup` runs inside the Claude Code CLI, not your shell. Launch `claude` first, then type `/web-setup` at the prompt.
 

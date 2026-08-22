@@ -48,7 +48,7 @@ Learn more: [Auto memory](/docs/en/memory#auto-memory)
 
 ### Auto mode
 
-A [permission mode](#permission-mode) where a separate classifier model reviews actions instead of you, so Claude Code runs most of them without asking you. Claude Code still asks you before actions your explicit ask rules match. On Pro, Max, and Team plans, auto mode is the [built-in starting permission mode](/docs/en/permission-modes#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions. The classifier blocks scope escalation, untrusted infrastructure, and [prompt injection](#prompt-injection). It never sees tool results, so injected instructions can't influence its decisions.
+A [permission mode](#permission-mode) where a separate classifier model reviews actions instead of you, so Claude Code runs most of them without asking you. Claude Code still asks you before actions your explicit ask rules match. On Pro, Max, and Team plans, auto mode is the [built-in starting permission mode](/docs/en/permission-modes#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions. The classifier blocks scope escalation, untrusted infrastructure, and [prompt injection](#prompt-injection). Tool results are stripped from what it sees, so hostile content in a file or web page can't manipulate it directly.
 
 Learn more: [Eliminate prompts with auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode)
 
@@ -56,7 +56,7 @@ Learn more: [Eliminate prompts with auto mode](/docs/en/permission-modes#elimina
 
 ### Bare mode
 
-With `--bare`, Claude Code starts without loading hooks, skills, plugins, MCP servers, auto memory, or CLAUDE.md. Recommended for CI and scripted calls where you need the same result on every machine.
+With `--bare`, Claude Code starts without loading hooks, skills, custom commands, subagents, plugins, MCP servers, auto memory, or CLAUDE.md, apart from skills in a directory you pass with `--add-dir`. Recommended for CI and scripted calls where you need the same result on every machine.
 
 Learn more: [Start faster with bare mode](/docs/en/headless#start-faster-with-bare-mode)
 
@@ -162,7 +162,7 @@ Learn more: [Get started with hooks](/docs/en/hooks-guide) · [Hooks reference](
 
 Settings enforced org-wide by IT or DevOps, delivered from Anthropic's servers through the admin console or deployed to devices at an OS-level path outside `~/.claude`. User and project settings cannot override managed settings. Server-managed delivery applies on [eligible configurations](/docs/en/server-managed-settings#platform-availability); see [Security considerations](/docs/en/server-managed-settings#security-considerations). Use this for security policies, compliance requirements, or standardized tooling across a fleet.
 
-Learn more: [Server-managed settings](/docs/en/server-managed-settings) · [Settings files](/docs/en/settings#settings-files)
+Learn more: [Server-managed settings](/docs/en/server-managed-settings) · [Settings files](/docs/en/settings#where-settings-live)
 
 ### MCP (Model Context Protocol)
 
@@ -178,7 +178,7 @@ Learn more: [Model Context Protocol](/docs/en/mcp)
 
 ### MCP Tool Search
 
-A context-saving mechanism that defers MCP tool schemas until needed. Only tool names load at startup; Claude fetches the full schema on demand when it decides to use a specific tool. This keeps idle MCP servers from consuming much context.
+A context-saving mechanism that defers MCP tool schemas until needed. Only tool names and server instructions load at startup; Claude fetches the full schema on demand when it decides to use a specific tool. This keeps idle MCP servers from consuming much context.
 
 Learn more: [Scale with MCP Tool Search](/docs/en/mcp#scale-with-mcp-tool-search)
 
@@ -194,7 +194,7 @@ Learn more: [Run Claude Code programmatically](/docs/en/headless)
 
 ### Output style
 
-A configuration that modifies Claude's system prompt to change response behavior, tone, or format. Output styles turn off the software-engineering-specific parts of the default system prompt, unlike [CLAUDE.md](#claude-md) which is delivered as a user message following the system prompt. Built-in styles include Default, Proactive, Explanatory, and Learning.
+A configuration that modifies Claude's system prompt to change response behavior, tone, or format. Unlike [CLAUDE.md](#claude-md), which Claude Code delivers as a user message after the system prompt, an output style changes the system prompt itself. Custom styles leave out Claude Code's built-in software engineering instructions unless you set `keep-coding-instructions` to `true`, and the built-in Default, Proactive, Concise, Explanatory, and Learning styles keep them.
 
 Learn more: [Output styles](/docs/en/output-styles)
 
@@ -234,7 +234,7 @@ Learn more: [The `.claude` directory](/docs/en/claude-directory)
 
 ### Prompt injection
 
-Hostile instructions embedded in a file, web page, or tool result that attempt to redirect Claude toward actions you never asked for. Claude Code's defenses include the permission system, command injection detection, and trust verification. [Auto mode](#auto-mode) adds a server-side probe that scans tool results for suspicious content and a classifier that never sees tool results, so injected text cannot influence its approval decisions.
+Hostile instructions embedded in a file, web page, or tool result that attempt to redirect Claude toward actions you never asked for. Claude Code's defenses include the permission system, command injection detection, and trust verification. [Auto mode](#auto-mode) adds a server-side probe that scans tool results for suspicious content and a classifier that reviews actions with tool results stripped, so injected text can't manipulate it directly.
 
 Learn more: [Protect against prompt injection](/docs/en/security#protect-against-prompt-injection)
 
@@ -270,7 +270,7 @@ Learn more: [Work with sessions](/docs/en/how-claude-code-works#work-with-sessio
 
 The hierarchy Claude Code reads configuration from, in precedence order from highest to lowest: [managed policy](#managed-settings), command-line arguments, local settings at `.claude/settings.local.json`, project settings at `.claude/settings.json`, then user settings at `~/.claude/settings.json`. Arrays merge across layers; scalars at a higher layer override lower ones. See [Settings precedence](/docs/en/settings#settings-precedence).
 
-Learn more: [Settings files](/docs/en/settings#settings-files)
+Learn more: [Settings files](/docs/en/settings#where-settings-live)
 
 ### Skill
 

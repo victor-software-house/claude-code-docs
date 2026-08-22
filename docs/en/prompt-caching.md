@@ -35,7 +35,7 @@ The prefix-match rule explains most of the behaviors on this page. [Plan mode](/
 Two settings aren't part of the prompt text at all, so they don't appear in the layer table, but both are part of the cache key:
 
 * **Model**: each model has its own cache. Switching models recomputes the entire request even when the content is identical. See [Switching models](#switching-models) below.
-* **Effort level**: each effort level has its own cache for the same model. Changing it mid-session recomputes the entire request, and Claude Code asks you to confirm before applying the change. See [Changing effort level](#changing-effort-level) below.
+* **Effort level**: each effort level has its own cache for the same model. Changing effort mid-session recomputes the entire request. See [Changing effort level](#changing-effort-level) below.
 
 <Tip>
   Pick your model and effort level at the top of a session, then save `/compact` for natural breaks between tasks. The fewer changes you make mid-task, the higher your cache hit rate.
@@ -50,9 +50,19 @@ Caching happens server-side, in whichever infrastructure serves your model. Wher
 * **Microsoft Foundry**: depends on the deployment's [hosting option](https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry#hosting-options). Hosted on Azure deployments are served on Azure infrastructure; Hosted on Anthropic deployments are served on Anthropic's infrastructure
 * **Custom `ANTHROPIC_BASE_URL` or [LLM gateway](/docs/en/llm-gateway)**: the cache lives wherever your requests are forwarded, and whether caching works depends on the gateway
 
-System context that Claude Code appends mid-conversation, such as file-change notices, is cached on Amazon Bedrock and its [Mantle endpoint](/docs/en/amazon-bedrock#use-the-mantle-endpoint), Google Cloud's Agent Platform, and Microsoft Foundry the same way it is on the Claude API. Before v2.1.211, these providers billed that appended system context as uncached input tokens on every request.
+Claude Code also appends system context mid-conversation, such as file-change notices. Whether that block is cached depends on how your requests reach the provider.
 
-When your requests pass through an [LLM gateway](/docs/en/llm-gateway) or a custom `ANTHROPIC_BASE_URL`, Claude Code marks that appended system context for caching the same way, and whether the cache takes effect depends on the gateway. If the gateway rejects the [cache breakpoint](https://platform.claude.com/docs/en/build-with-claude/prompt-caching#explicit-cache-breakpoints) on that block, Claude Code retries the request without it and leaves that block uncached for the rest of the conversation.
+At the provider's own endpoint, Amazon Bedrock and its [Mantle endpoint](/docs/en/amazon-bedrock#use-the-mantle-endpoint), Google Cloud's Agent Platform, and Microsoft Foundry cache the block the same way the Claude API does. For Bedrock, Mantle, and Agent Platform, that means their base-URL variables are unset. For Foundry, it means `ANTHROPIC_FOUNDRY_BASE_URL` is unset or points at your resource's `services.ai.azure.com` host, the standard [Microsoft Foundry setup](/docs/en/microsoft-foundry). Before v2.1.211, these providers billed the block as uncached input tokens on every request.
+
+Claude Code doesn't mark the block for caching, so it shows up as uncached input on every request, in any of these setups:
+
+* [`ANTHROPIC_BEDROCK_BASE_URL`](/docs/en/env-vars), `ANTHROPIC_VERTEX_BASE_URL`, or `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` set to any value, even the provider's own endpoint
+* `ANTHROPIC_FOUNDRY_BASE_URL` pointing at a host outside `services.ai.azure.com`, such as a gateway
+* [`ANTHROPIC_AWS_BASE_URL`](/docs/en/env-vars) set to any value on [Claude Platform on AWS](/docs/en/claude-platform-on-aws), including a custom-region endpoint
+* An [LLM gateway](/docs/en/llm-gateway) or a custom `ANTHROPIC_BASE_URL`
+* A [Claude apps gateway](/docs/en/claude-apps-gateway) session
+
+Claude Code keeps the conversation's own [cache breakpoints](https://platform.claude.com/docs/en/build-with-claude/prompt-caching#explicit-cache-breakpoints) in place, so a gateway that forwards them still caches your conversation. Before v2.1.237, Claude Code marked the block for caching through gateways too, and a gateway that silently removed the marker left the entire conversation billed as uncached input on every turn.
 
 For what each provider stores and processes, see [data usage](/docs/en/data-usage). Wherever the cache lives, entries expire after a period of inactivity, and [Cache lifetime](#cache-lifetime) below covers the TTL and how to extend it.
 
@@ -73,13 +83,17 @@ These actions cause the next request to miss part or all of the cache. You see a
 
 Each model has its own cache. Switching with [`/model`](/docs/en/model-config#setting-your-model) means the next request reads the entire conversation history with no cache hits, even though the content is identical.
 
+When you run `/model` at the terminal, Claude Code asks you to confirm the switch only while the cache is still warm. The cache stays warm for one [cache TTL](#cache-lifetime) after Claude Code last sent a request in this conversation or Claude last responded. Once that time passes, the cache has expired, so Claude Code switches without asking.
+
+Before v2.1.238, Claude Code didn't check the cache TTL and asked even after the cache had expired.
+
 The [`opusplan` model setting](/docs/en/model-config#opusplan-model-setting) resolves to Opus during plan mode and Sonnet during execution, so each plan-mode toggle is a model switch and starts a fresh cache.
 
 [Automatic model fallback](/docs/en/model-config#automatic-model-fallback) on Fable 5 and Opus 5 is also a model switch. When a safety classifier flags a request and the flagged category has a fallback model, Claude Code re-runs the request on that model and the session continues there.
 
 ### Changing effort level
 
-The cache is keyed by [effort level](/docs/en/model-config#adjust-effort-level) as well as model, so switching with `/effort` means the next request reads the entire conversation history with no cache hits. Once a conversation has started, Claude Code shows a confirmation dialog before applying an effort change that would invalidate the cache. A change that resolves to the same level already in effect, such as setting the model's default explicitly, skips the dialog and keeps the cache.
+The cache is keyed by [effort level](/docs/en/model-config#adjust-effort-level) as well as model, so switching with `/effort` means the next request reads the entire conversation history with no cache hits. Changing effort follows the same confirmation as [switching models](#switching-models). When a change resolves to the same level already in effect, such as setting the model's default explicitly, Claude Code keeps the cache and applies the change without asking.
 
 ### Turning on fast mode
 
@@ -134,7 +148,7 @@ When you disable a plugin you enabled earlier in the session, Claude Code restor
 
 ### Denying an entire tool
 
-Adding a bare tool name like `Bash` or `WebFetch` as a [deny rule](/docs/en/permissions#manage-permissions) removes that tool from Claude's context entirely. Built-in tool definitions load into the system prompt layer, so adding or removing one of these rules mid-session invalidates the cache. Claude Code applies the change on the next request, even one in the middle of a turn, whether you add the rule through `/permissions` or by [editing a settings file directly](/docs/en/settings#when-edits-take-effect).
+Adding a bare tool name like `Bash` or `WebFetch` as a [deny rule](/docs/en/permissions#manage-permissions) removes that tool from Claude's context entirely. Claude Code loads built-in tool definitions into the system prompt layer, so adding or removing one of these rules mid-session invalidates the cache. Claude Code applies the change on the next request, whether you add the rule through `/permissions` or by [editing a settings file directly](/docs/en/settings#when-edits-take-effect). That includes a rule you add through `/permissions` in the middle of a turn.
 
 Only a deny rule that matches in the tool-name position has this effect: a bare tool name, the equivalent `Bash(*)` form, or a [tool-name glob](/docs/en/permissions#tool-name-wildcards) like `"*"`. A glob that matches only MCP tools, such as `"mcp__*"`, removes those tools the same way but leaves the cache intact when the matched tools are [deferred](#connecting-or-disconnecting-an-mcp-server), the default, since deferred definitions were never in the cached prefix. Scoped deny rules like `Bash(rm *)`, and all allow and ask rules, don't change which tools Claude sees. Claude Code checks them when Claude attempts a call, leaving the prefix intact.
 
@@ -225,7 +239,7 @@ On Amazon Bedrock, prompt caching support, minimum cacheable prefix length, and 
 
 ### Override the TTL
 
-Set `FORCE_PROMPT_CACHING_5M=1` to force the five-minute TTL regardless of authentication. This is useful when you're debugging cache behavior, comparing the two TTLs, or overriding an `ENABLE_PROMPT_CACHING_1H` set in [managed settings](/docs/en/settings#settings-files).
+Set `FORCE_PROMPT_CACHING_5M=1` to force the five-minute TTL regardless of authentication. This is useful when you're debugging cache behavior, comparing the two TTLs, or overriding an `ENABLE_PROMPT_CACHING_1H` set in [managed settings](/docs/en/managed-settings).
 
 ## Cache scope
 
@@ -268,7 +282,7 @@ Disabling caching is occasionally useful when debugging caching behavior with a 
 | `DISABLE_PROMPT_CACHING_OPUS`   | Disable for Opus only   |
 | `DISABLE_PROMPT_CACHING_FABLE`  | Disable for Fable only  |
 
-To set caching policy across an organization, put any of these or the [TTL variables](#cache-lifetime) in the `env` block of [managed settings](/docs/en/settings#settings-files). For normal use, leave caching enabled.
+To set caching policy across an organization, put any of these or the [TTL variables](#cache-lifetime) in the `env` block of [managed settings](/docs/en/managed-settings). For normal use, leave caching enabled.
 
 ## Related resources
 
