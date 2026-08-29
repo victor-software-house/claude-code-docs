@@ -58,7 +58,7 @@ Two other settings can further filter the managed set:
 
 See [How a server is evaluated](#how-a-server-is-evaluated) for the full order of checks.
 
-`managed-mcp.json` is a standalone file, so it cannot be delivered through [server-managed settings](/docs/en/server-managed-settings). Any process that can write to a system path with administrator privileges can deploy it. At scale, that's usually through device management tooling, such as Jamf or a configuration profile on macOS, Group Policy or Intune on Windows, or your fleet management of choice on Linux. Claude Code looks for the file at one of these paths:
+`managed-mcp.json` is a standalone file, so it cannot be delivered through [server-managed settings](/docs/en/server-managed-settings). Any process that can write to a system path with administrator privileges can deploy it. Across a fleet, that's usually through device management tooling, such as Jamf or a configuration profile on macOS, Group Policy or Intune on Windows, or your fleet management of choice on Linux. Claude Code looks for the file at one of these paths:
 
 | Platform      | Path                                                       |
 | :------------ | :--------------------------------------------------------- |
@@ -120,7 +120,7 @@ Deploy a `managed-mcp.json` containing an empty server map to block every MCP se
 
 ### Allow claude.ai connectors alongside the managed set
 
-By default, deploying `managed-mcp.json` suppresses the [claude.ai connectors](/docs/en/mcp#use-mcp-servers-from-claude-ai) Claude Code fetches itself, including connectors an administrator configured for the organization in the claude.ai admin console. To load those connectors alongside the servers in `managed-mcp.json`, set `"allowAllClaudeAiMcps": true` in a [managed settings source](/docs/en/admin-setup#decide-how-settings-reach-devices). Requires Claude Code v2.1.149 or later.
+By default, deploying `managed-mcp.json` suppresses the [claude.ai connectors](/docs/en/mcp#use-mcp-servers-from-claude-ai) Claude Code fetches itself, including connectors an administrator configured for the organization in the claude.ai admin console. To load those connectors alongside the servers in `managed-mcp.json`, set `"allowAllClaudeAiMcps": true` in a [managed settings source](/docs/en/admin-setup#decide-how-settings-reach-devices).
 
 With the setting enabled, Claude Code loads the same claude.ai connectors it would load if `managed-mcp.json` weren't deployed. [Allowlists and denylists](#policy-based-control-with-allowlists-and-denylists) still apply to those connectors, so you can block specific ones with `deniedMcpServers`. The setting affects only the claude.ai connectors Claude Code fetches itself; plugin-provided servers stay suppressed.
 
