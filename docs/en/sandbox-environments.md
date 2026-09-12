@@ -27,7 +27,7 @@ The first two approaches in the table below run on the host operating system wit
 | [Virtual machine](#virtual-machine)               | Full operating system                                                       | No              | High                                                                                    |
 | [Claude Code on the web](#claude-code-on-the-web) | Full operating system, hosted by Anthropic                                  | No              | None; requires a Claude subscription, and GitHub when you launch from the web interface |
 
-The [sandboxed Bash tool](/docs/en/sandboxing) is built into Claude Code and restricts only Bash commands. Built-in file tools, MCP servers, and hooks still run directly on your host. Every other approach in the table puts the whole Claude Code process inside the isolation boundary, so file tools, MCP servers, and hooks are restricted too.
+The [sandboxed Bash tool](/docs/en/sandboxing) is built into Claude Code and restricts Bash commands. Built-in file tools, MCP servers, and hooks still run directly on your host. Every other approach in the table puts the whole Claude Code process inside the isolation boundary, so file tools, MCP servers, and hooks are restricted too.
 
 <Warning>
   Sandbox isolation reduces the impact of a breach, but it does not eliminate risk. Any approach that allows network egress can still leak data the agent can read, and any approach that mounts your project directory writable can still modify that code. Review the [security limitations](/docs/en/sandboxing#security-limitations) before relying on a sandbox as a hard control.
@@ -75,7 +75,7 @@ Run the `/sandbox` command to open the sandbox panel and choose a mode. The [San
 The per-command sandbox does not cover everything that runs in a session:
 
 * Other [built-in tools](/docs/en/tools-reference) such as Read, Edit, and WebFetch run inside the Claude Code process and do not spawn arbitrary code. [Permission rules](/docs/en/permissions) for path or domain gate them instead.
-* [MCP](/docs/en/mcp) servers and hooks are separate processes that run unconstrained on the host.
+* [MCP](/docs/en/mcp) servers and [command hooks](/docs/en/hooks#command-hook-fields) are separate processes that run unconstrained on the host.
 
 To put built-in tools, MCP servers, and hooks all behind one OS boundary, run the whole Claude Code process inside the [sandbox runtime](#sandbox-runtime), the [dev container](#dev-containers), or a [custom container](#custom-container).
 
@@ -157,7 +157,7 @@ A dedicated virtual machine provides the strongest separation, with its own kern
 
 [Claude Code on the web](/docs/en/claude-code-on-the-web) runs each session in an isolated, Anthropic-managed virtual machine. A network proxy enforces a default allowlist, and a separate proxy holds your GitHub token outside the sandbox while issuing scoped credentials for repository access inside it. Sessions your organization routes to a [self-hosted environment](/docs/en/self-hosted-environments) run on infrastructure you provision instead, where isolation, egress control, and git credentials are your deployment's responsibility.
 
-Use this approach when you want full VM isolation without provisioning infrastructure yourself, or when you are delegating tasks from a device that does not have a local development environment. It requires a Claude subscription. When you launch a session from the web interface, you also need a connected GitHub account so the sandbox can clone your repository. When you launch from the CLI with `--cloud`, Claude Code can [bundle and upload your local repository](/docs/en/claude-code-on-the-web#send-local-repositories-without-github) instead if GitHub isn't connected. See [Claude Code on the web](/docs/en/claude-code-on-the-web) for plan availability and GitHub authentication options.
+Use this approach when you want full VM isolation without provisioning infrastructure yourself, or when you are delegating tasks from a device that does not have a local development environment. It requires a Claude subscription. When you launch a session from the web interface, you also need a connected GitHub account so the sandbox can clone your repository. When you launch from the CLI with `--cloud`, Claude Code can [bundle and upload your local repository](/docs/en/claude-code-on-the-web#send-local-repositories-without-github) instead. See [Claude Code on the web](/docs/en/claude-code-on-the-web) for plan availability and GitHub authentication options.
 
 ## Enforce isolation across an organization
 
