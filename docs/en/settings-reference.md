@@ -792,7 +792,8 @@ scope: "Which settings files can set the key: user (~/.claude/settings.json), pr
 | [`subagentPromptCacheTtl`](#subagentpromptcachettl)                                                   | Choose the [prompt cache lifetime](/docs/en/prompt-caching#cache-lifetime) for subagents and other requests outside the main conversation                                                                                        | Model and responses                | Any file                |
 | [`subagentStatusLine`](#subagentstatusline)                                                           | Rewrite rows in the [subagent](/docs/en/sub-agents) task display with your own command                                                                                                                                           | Interface and terminal             | Any file                |
 | [`switchModelsOnFlag`](#switchmodelsonflag)                                                           | Switch models automatically or pause when a [safety classifier](/docs/en/model-config#ask-before-switching) flags a request                                                                                                      | Model and responses                | Any file                |
-| [`syncClaudeAiSkills`](#syncclaudeaiskills)                                                           | Stop downloading the [skills enabled on your claude.ai account](/docs/en/skills#how-synced-skills-behave) and hide the ones already synced                                                                                       | Plugins and skills                 | User, local, or managed |
+| [`syncClaudeAiPlugins`](#syncclaudeaiplugins)                                                         | Stop loading the [plugins enabled on your claude.ai account](/docs/en/plugins-reference#synced-plugins) and stop downloading new ones                                                                                            | Plugins and skills                 | User, local, or managed |
+| [`syncClaudeAiSkills`](#syncclaudeaiskills)                                                           | Stop loading the [skills enabled on your claude.ai account](/docs/en/skills#how-synced-skills-behave) and stop downloading new ones                                                                                              | Plugins and skills                 | User, local, or managed |
 | [`syntaxHighlightingDisabled`](#syntaxhighlightingdisabled)                                           | Turn off syntax highlighting in diffs and code blocks                                                                                                                                                                       | Interface and terminal             | Any file                |
 | [`taskOutputMaxChars`](#taskoutputmaxchars)                                                           | Set how much of a [background task's](/docs/en/tools-reference#background-commands) output Claude receives inline                                                                                                                | Memory and context                 | Any file                |
 | [`teammateDefaultModel`](#teammatedefaultmodel)                                                       | Removed in v2.1.234; see [Specify teammates and models](/docs/en/agent-teams#specify-teammates-and-models) for how Claude Code picks a teammate's model                                                                          | Global config settings             | Global config           |
@@ -4094,19 +4095,39 @@ In managed settings and files passed with `--settings`, a key on a bundled skill
 
 ### `syncClaudeAiSkills`
 
-Turn off the download of the [skills you enable on claude.ai](/docs/en/skills#how-synced-skills-behave). Claude Code downloads them into `~/.claude/skills/synced/` when you run it in [non-interactive mode](/docs/en/headless) with the `-p` flag and [`CLAUDE_CODE_SYNC_SKILLS`](/docs/en/env-vars#variables) set. Set `false` to stop that download and hide the skills it already synced. Claude Code honors only `false`: `true` is the same as unset and doesn't turn syncing on.
+Turn off the download of the [skills enabled for your claude.ai account](/docs/en/skills#how-synced-skills-behave). Claude Code downloads them into `~/.claude/skills/synced/` in [terminal sessions where you sign in with your claude.ai account](/docs/en/skills#where-synced-skills-load), interactive or non-interactive, and in Cowork and cloud sessions. Set `false` to stop that download and stop loading the skills it already synced. Claude Code honors only `false`: `true` is the same as unset and doesn't turn syncing on where it's otherwise off.
 
-* **Scope**: [`User, local, or managed`](#scopes). A repository can't turn it off for you.
+* **Scope**: [`User, local, or managed`](#scopes), and files passed with `--settings`. A repository can't turn it off for you.
 * **Type**: Boolean
-  * `false`: Claude Code stops downloading synced skills and hides the ones already in `~/.claude/skills/synced/`. In user or managed settings, it also moves them to `~/.claude/skills/.trash/`
+  * `false`: Claude Code stops downloading synced skills and stops loading the ones already in `~/.claude/skills/synced/`. In user or managed settings, it also moves them to `~/.claude/skills/.trash/`
   * `true`: the same as unset
-* **Default**: unset, so a non-interactive run with `CLAUDE_CODE_SYNC_SKILLS` set downloads the skills
+* **Default**: unset, so sessions signed in with your claude.ai account sync your skills
 
-This example keeps a machine from downloading the account's skills, whatever a session sets in its environment:
+This example keeps a machine from downloading the account's skills in any session:
 
 ```json settings.json theme={null}
 {
   "syncClaudeAiSkills": false
+}
+```
+
+### `syncClaudeAiPlugins`
+
+Turn off the download of the [plugins enabled for your claude.ai account](/docs/en/plugins-reference#synced-plugins). Claude Code downloads them into `~/.claude/plugins/synced/` at the start of terminal sessions where you sign in with your claude.ai account, and in Cowork and cloud sessions, and loads each one as `<name>@synced`. Set `false` to stop that download and stop loading the plugins it already synced. Claude Code honors only `false`: `true` is the same as unset and doesn't turn syncing on where it's otherwise off. Requires Claude Code v2.1.273 or later.
+
+* **Scope**: [`User, local, or managed`](#scopes), and files passed with `--settings`. A repository can't turn it off for you.
+* **Type**: Boolean
+  * `false`: Claude Code stops downloading synced plugins and stops loading the ones already in `~/.claude/plugins/synced/`. In user or managed settings, it also moves them to `~/.claude/plugins/.trash/`
+  * `true`: the same as unset
+* **Default**: unset, so sessions signed in with your claude.ai account sync your plugins
+
+To turn off one synced plugin rather than all of them, set `"<name>@synced": false` in [`enabledPlugins`](#enabledplugins).
+
+This example keeps a machine from downloading the account's plugins in any session:
+
+```json settings.json theme={null}
+{
+  "syncClaudeAiPlugins": false
 }
 ```
 
@@ -4511,7 +4532,9 @@ The `source` object takes one of these forms:
 
 The `git` source type works with any git hosting service, including self-hosted GitLab and Bitbucket. Claude Code clones the repository with the same authentication that `git clone` would use on that machine: configured credential helpers or SSH keys. A provider token such as `GITHUB_TOKEN` takes effect only through a credential helper that reads it. See [Private repositories](/docs/en/plugin-marketplaces#private-repositories) for setup details.
 
-For `github` and `git` sources, set `"skipLfs": true` inside the `source` object, alongside `repo` or `url`, to skip Git LFS downloads when Claude Code clones or updates the marketplace repository. LFS pointer files remain as pointers instead of downloading their content. Use this when the repository contains large LFS objects unrelated to plugin content.
+For `github` and `git` sources, Claude Code never downloads [Git LFS](https://git-lfs.com) content when it clones the marketplace repository to add or update it. LFS-tracked files are checked out as pointer files, and the add or update output reports how many.
+
+The `skipLfs` field inside the `source` object is accepted and has no effect. Before v2.1.274, Claude Code downloaded LFS content unless you set `"skipLfs": true`.
 
 For a `url` source, set `headersHelper` inside the `source` object when the credential in `headers` expires and a command has to produce a fresh one. Requires Claude Code v2.1.238 or later. For what the command must print and where Claude Code runs it, see [Write the headersHelper command](/docs/en/plugin-marketplaces#write-the-headershelper-command), and for the cases where Claude Code doesn't run it, see [When Claude Code skips a headersHelper command](/docs/en/plugin-marketplaces#when-claude-code-skips-a-headershelper-command-or-drops-its-output). Once you set `headersHelper` on an `https://` marketplace URL, Claude Code runs the command at two points, reusing one run's output for up to 60 seconds:
 
@@ -4881,7 +4904,7 @@ Choose where Claude Code shows [agent team](/docs/en/agent-teams) teammates: ins
 }
 ```
 
-Before v2.1.179, the default was `auto`. The `iterm2` value requires Claude Code v2.1.186 or later.
+The `iterm2` value requires Claude Code v2.1.186 or later.
 
 <span id="worktree-settings" />
 
