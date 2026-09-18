@@ -158,7 +158,7 @@ API triggers are added to an existing routine from the web. The CLI cannot curre
 
 <Steps>
   <Step title="Open the routine for editing">
-    Go to [claude.ai/code/routines](https://claude.ai/code/routines), click the routine you want to trigger via API, then click the pencil icon to open **Edit routine**.
+    Go to [claude.ai/code/routines](https://claude.ai/code/routines), click the routine you want to trigger via API, then open the menu next to the routine's name and select **Edit**.
   </Step>
 
   <Step title="Add an API trigger">
@@ -232,7 +232,7 @@ The Claude GitHub App must be installed on the repository you want to subscribe 
 
 <Steps>
   <Step title="Open the routine for editing">
-    Go to [claude.ai/code/routines](https://claude.ai/code/routines), click the routine, then click the pencil icon to open **Edit routine**.
+    Go to [claude.ai/code/routines](https://claude.ai/code/routines), click the routine, then open the menu next to the routine's name and select **Edit**.
   </Step>
 
   <Step title="Add a GitHub event trigger">
@@ -299,9 +299,9 @@ Click any run to open it as a full session. From there you can see what Claude d
 From the routine detail page you can:
 
 * Click **Run now** to start a run immediately without waiting for the next scheduled time. You can optionally supply run-specific text, which reaches the routine the same way as the API trigger's `text` field.
-* Use the toggle in the **Repeats** section to pause or resume the schedule. Paused routines keep their configuration but don't run until you re-enable them.
-* Click the pencil icon to open **Edit routine** and change the name, prompt, repositories, environment, connectors, or any of the routine's triggers. The **Select a trigger** section is where you add or remove schedules, API tokens, and GitHub event triggers.
-* Click the delete icon to remove the routine. Past sessions created by the routine remain in your session list.
+* Use the on/off switch at the top of the page to pause or resume the schedule. Paused routines keep their configuration but don't run until you re-enable them.
+* Open the menu next to the routine's name and select **Edit** to change the name, prompt, repositories, environment, connectors, or any of the routine's triggers. The **Select a trigger** section is where you add or remove schedules, API tokens, and GitHub event triggers.
+* Open the same menu and select **Delete** to delete the routine.
 
 ### Manage routines from the CLI
 
@@ -325,7 +325,7 @@ Claude pushes its work to branches prefixed with `claude/`, which are always acc
 
 Routines can use your connected MCP connectors to read from and write to external services during each run. For example, a routine that triages support requests might read from a Slack channel and create issues in Linear.
 
-Connectors are the [claude.ai integrations](/docs/en/mcp#use-mcp-servers-from-claude-ai) on your account. MCP servers you added locally in the CLI with `claude mcp add` are stored on your machine rather than your claude.ai account, so they do not appear in the connectors list. To use one of those servers in a routine, add it as a connector at [claude.ai/customize/connectors](https://claude.ai/customize/connectors), or declare it in a committed [`.mcp.json`](/docs/en/mcp#project-scope) so it is part of the cloned repository.
+Connectors are the [claude.ai integrations](/docs/en/mcp#use-mcp-servers-from-claude-ai) on your account. MCP servers you added locally in the CLI with `claude mcp add` are stored on your machine rather than your claude.ai account, so they do not appear in the connectors list. To use one of those servers in a routine, add it as a connector at [claude.ai/customize/connectors](https://claude.ai/customize/connectors). For a routine with one repository, you can instead declare it in a committed [`.mcp.json`](/docs/en/mcp#project-scope) so it is part of the cloned repository.
 
 When you create a routine, all of your currently connected connectors are included by default. Remove any that aren't needed to limit which tools Claude has access to during the run. You can also add connectors directly from the routine form.
 
@@ -341,7 +341,7 @@ To allow additional domains:
 
 <Steps>
   <Step title="Open the routine for editing">
-    On the routine's detail page, click the pencil icon to open **Edit routine**.
+    On the routine's detail page, open the menu next to the routine's name and select **Edit**.
   </Step>
 
   <Step title="Open the environment selector">
@@ -400,5 +400,6 @@ An Owner in your Team or Enterprise organization has likely turned off the **Rou
 * [`/loop` and in-session scheduling](/docs/en/scheduled-tasks): schedule local tasks within an open CLI session
 * [Desktop scheduled tasks](/docs/en/desktop-scheduled-tasks): local scheduled tasks that run on your machine with access to local files
 * [Cloud environments](/docs/en/cloud-environments): configure network access, environment variables, and setup scripts for cloud sessions
+* [Projects](/docs/en/claude-projects): ongoing work Claude coordinates across parallel cloud sessions; routines created from a project appear on its **Routines** tab
 * [MCP connectors](/docs/en/mcp): connect external services like Slack, Linear, and Google Drive
 * [GitHub Actions](/docs/en/github-actions): run Claude in your CI pipeline on repository events
