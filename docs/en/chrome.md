@@ -90,7 +90,10 @@ The prompt offers three choices:
 * **Not now**: continues the task without browser tools. Claude Code can ask again in a later session.
 * **Don't ask again**: stops the prompt in future sessions. You can still set up the integration anytime with `/chrome`.
 
-If your organization blocks the `claude-in-chrome` MCP server with the [`deniedMcpServers` managed setting](/docs/en/managed-mcp#policy-based-control-with-allowlists-and-denylists), Claude Code doesn't show the install prompt.
+Two managed MCP policies turn the prompt off:
+
+* If your organization blocks the `claude-in-chrome` MCP server with the [`deniedMcpServers` managed setting](/docs/en/managed-mcp#policy-based-control-with-allowlists-and-denylists), Claude Code doesn't show the install prompt.
+* If your organization deploys a [`managed-mcp.json`](/docs/en/managed-mcp#exclusive-control-with-managed-mcp-json) file without [allowing Claude in Chrome alongside the managed set](/docs/en/managed-mcp#allow-claude-in-chrome-alongside-the-managed-set), Claude Code doesn't show the install prompt.
 
 ### Enable Chrome by default
 
@@ -106,7 +109,7 @@ In the [VS Code extension](/docs/en/vs-code#automate-browser-tasks-with-chrome),
 
 ### Manage site permissions
 
-Site-level permissions are inherited from the Chrome extension. Manage permissions in the Chrome extension settings to control which sites Claude can browse, click, and type on.
+Site-level permissions are inherited from the Chrome extension. Manage permissions in the Chrome extension settings to control which sites Claude can browse, click, and type on. In [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), when the auto mode classifier itself approves a browser call to a site, the extension skips its own per-site check for that call, unless your permission rules deny any site to Claude in Chrome.
 
 ### Browser tools in plan mode
 
@@ -281,12 +284,12 @@ On Windows, you may encounter:
 
 These are the most frequently encountered errors and how to resolve them:
 
-| Error                                       | Cause                                                                                                                                          | Fix                                                                                                                                                                                                                                                  |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| "Browser extension is not connected"        | Native messaging host cannot reach the extension, or your organization's IP allowlist rejects the connection to `bridge.claudeusercontent.com` | Restart Chrome and Claude Code, then run `/chrome` to reconnect. If your organization uses IP allowlisting and the error persists, see [Organization IP allowlists and proxy egress](/docs/en/network-config#organization-ip-allowlists-and-proxy-egress) |
-| Extension shows "Not detected" in `/chrome` | Chrome extension is not installed or is disabled                                                                                               | Install or enable the extension in `chrome://extensions`                                                                                                                                                                                             |
-| "No tab available"                          | Claude tried to act before a tab was ready                                                                                                     | Ask Claude to create a new tab and retry                                                                                                                                                                                                             |
-| "Receiving end does not exist"              | Extension service worker went idle                                                                                                             | Run `/chrome` and select "Reconnect extension"                                                                                                                                                                                                       |
+| Error | Cause | Fix |
+| - | - | - |
+| "Browser extension is not connected" | Native messaging host cannot reach the extension, or your organization's IP allowlist rejects the connection to `bridge.claudeusercontent.com` | Restart Chrome and Claude Code, then run `/chrome` to reconnect. If your organization uses IP allowlisting and the error persists, see [Organization IP allowlists and proxy egress](/docs/en/network-config#organization-ip-allowlists-and-proxy-egress) |
+| Extension shows "Not detected" in `/chrome` | Chrome extension is not installed or is disabled | Install or enable the extension in `chrome://extensions` |
+| "No tab available" | Claude tried to act before a tab was ready | Ask Claude to create a new tab and retry |
+| "Receiving end does not exist" | Extension service worker went idle | Run `/chrome` and select "Reconnect extension" |
 
 ## See also
 

@@ -32,11 +32,11 @@ curl -sS https://claude-gateway.internal.example.com/v1/organizations/spend_limi
   -d '{"scope": {"type": "rbac_group", "rbac_group_id": "contractors"}, "amount": "10000", "period": "daily"}'
 ```
 
-| Field        | Values                                      | Description                                                                                                                                                                                                                                                                                                                                                                                   |
-| ------------ | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scope.type` | `user`, `rbac_group`, `organization`        | `user` targets one developer by their OpenID Connect (OIDC) `sub`, the stable user ID your identity provider assigns; pass it as `scope.user_id`. `rbac_group` targets an [IdP group](/docs/en/claude-apps-gateway-config#managed) by name; pass it as `scope.rbac_group_id`. `organization` is the org-wide default. The gateway accepts all three; Anthropic's public `POST` is user-only today. |
-| `amount`     | Whole-number string of USD cents, or `null` | `null` is unlimited. `"0"` is a zero cap, which blocks every request.                                                                                                                                                                                                                                                                                                                         |
-| `period`     | `daily`, `weekly`, `monthly`                | A scope can hold one cap per period, and each enforces independently: a developer is blocked if over any of them.                                                                                                                                                                                                                                                                             |
+| Field | Values | Description |
+| - | - | - |
+| `scope.type` | `user`, `rbac_group`, `organization` | `user` targets one developer by their OpenID Connect (OIDC) `sub`, the stable user ID your identity provider assigns; pass it as `scope.user_id`. `rbac_group` targets an [IdP group](/docs/en/claude-apps-gateway-config#managed) by name; pass it as `scope.rbac_group_id`. `organization` is the org-wide default. The gateway accepts all three; Anthropic's public `POST` is user-only today. |
+| `amount` | Whole-number string of USD cents, or `null` | `null` is unlimited. `"0"` is a zero cap, which blocks every request. |
+| `period` | `daily`, `weekly`, `monthly` | A scope can hold one cap per period, and each enforces independently: a developer is blocked if over any of them. |
 
 A group or organization cap is a per-seat default that each member inherits, not a shared pool. Per period, a developer's effective cap resolves in this order: a per-user override, then the most restrictive of their group caps, then the org default, then unlimited. [`admin.group_limit_mode: max`](/docs/en/claude-apps-gateway-config#admin) flips the multi-group tie-break to least-restrictive instead.
 
@@ -76,6 +76,8 @@ Client aborts are billed too. When a stream ends without the upstream's final us
 
 The pre-check queries Postgres with a two-second timeout. If the store is unreachable or times out, enforcement fails open by default: the request proceeds, the gateway logs a warning, and the response carries no `anthropic-ratelimit-unified-*` headers. Set [`enforcement.fail_closed_on_error: true`](/docs/en/claude-apps-gateway-config#enforcement) to fail closed instead, which returns the same `429 billing_error` but with the message `spend limit unavailable` and no period, reset time, or `retry-after` header. Fail-open keeps a store outage from becoming an inference outage; fail-closed guarantees no unmetered spend.
 
+Fail-open only helps while your load balancer or orchestrator still routes traffic to the gateway. See [Outage behavior](/docs/en/claude-apps-gateway-deploy#outage-behavior) for `store.readiness_grace_seconds`, which keeps replicas passing their readiness check through a short outage.
+
 ### Usage warnings in Claude Code
 
 Claude Code warns a developer as they approach their cap: once utilization passes 75%, and again past 95% of their most-consumed cap. When the gateway blocks a request, Claude Code shows the gateway's `429` message as is, including your `admin.blocked_message`.
@@ -93,14 +95,14 @@ With v2.1.251 or later on the developer's machine, Claude Code also reads the sa
 
 The endpoints below are served under `/v1/organizations/spend_limits`.
 
-| Method and path                                | Description                                                                                                                                                  |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /v1/organizations/spend_limits`           | List configured caps, optionally filtered to one `scope_type` of `organization`, `rbac_group`, or `user`. Query: `?limit=&after_id=&before_id=&scope_type=`. |
-| `POST /v1/organizations/spend_limits`          | Create or replace a cap for `{scope, period}`.                                                                                                               |
-| `GET /v1/organizations/spend_limits/{id}`      | Fetch one cap by its `spl_`-prefixed ID.                                                                                                                     |
-| `DELETE /v1/organizations/spend_limits/{id}`   | Delete one cap. Returns `{type: "spend_limit_deleted", id}`.                                                                                                 |
-| `GET /v1/organizations/spend_limits/effective` | Resolved cap and to-date spend per principal per period.                                                                                                     |
-| `GET /v1/organizations/spend_limits/audit`     | Admin mutation trail, newest-first. Query: `?limit=&after_id=`.                                                                                              |
+| Method and path | Description |
+| - | - |
+| `GET /v1/organizations/spend_limits` | List configured caps, optionally filtered to one `scope_type` of `organization`, `rbac_group`, or `user`. Query: `?limit=&after_id=&before_id=&scope_type=`. |
+| `POST /v1/organizations/spend_limits` | Create or replace a cap for `{scope, period}`. |
+| `GET /v1/organizations/spend_limits/{id}` | Fetch one cap by its `spl_`-prefixed ID. |
+| `DELETE /v1/organizations/spend_limits/{id}` | Delete one cap. Returns `{type: "spend_limit_deleted", id}`. |
+| `GET /v1/organizations/spend_limits/effective` | Resolved cap and to-date spend per principal per period. |
+| `GET /v1/organizations/spend_limits/audit` | Admin mutation trail, newest-first. Query: `?limit=&after_id=`. |
 
 Conventions mirror Anthropic's Admin API:
 
@@ -125,12 +127,12 @@ The gateway serves the spend-limits endpoints only. Other Admin API surfaces, su
 
 Group-sourced caps resolve against those last-seen groups with the same `group_limit_mode` tie-break that enforcement uses, so the viewer shows the cap that actually applies.
 
-| Query parameter  | Description                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------- |
-| `user_ids[]`     | Repeatable. Filter to specific principals by OIDC `sub`.                                                |
-| `period[]`       | Repeatable. Filter to `daily`, `weekly`, or `monthly` rows.                                             |
-| `sort`           | `spend_desc` lists top spenders first. Requires exactly one `period[]`.                                 |
-| `q`              | Case-insensitive substring filter over the OIDC `sub`, last-seen email, and last-seen display name.     |
+| Query parameter | Description |
+| - | - |
+| `user_ids[]` | Repeatable. Filter to specific principals by OIDC `sub`. |
+| `period[]` | Repeatable. Filter to `daily`, `weekly`, or `monthly` rows. |
+| `sort` | `spend_desc` lists top spenders first. Requires exactly one `period[]`. |
+| `q` | Case-insensitive substring filter over the OIDC `sub`, last-seen email, and last-seen display name. |
 | `limit` / `page` | Page size, 1–1000 with a default of 20, and the opaque cursor from the previous response's `next_page`. |
 
 <Warning>
@@ -149,11 +151,11 @@ The raw list pages by `after_id` and `before_id`, which are mutually exclusive `
 
 The gateway holds four spend-related tables; an hourly sweep enforces the retention windows:
 
-| Table              | Contents                                                                      | Retention                                                                                               |
-| ------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `spend`            | Per-principal period-to-date counters in cents                                | [`admin.spend_retention_months`](/docs/en/claude-apps-gateway-config#admin), default 13                      |
-| `spend_limits`     | The configured caps                                                           | Until deleted via the API                                                                               |
-| `admin_audit`      | The mutation trail                                                            | [`admin.audit_retention_days`](/docs/en/claude-apps-gateway-config#admin), default 365                       |
+| Table | Contents | Retention |
+| - | - | - |
+| `spend` | Per-principal period-to-date counters in cents | [`admin.spend_retention_months`](/docs/en/claude-apps-gateway-config#admin), default 13 |
+| `spend_limits` | The configured caps | Until deleted via the API |
+| `admin_audit` | The mutation trail | [`admin.audit_retention_days`](/docs/en/claude-apps-gateway-config#admin), default 365 |
 | `principal_emails` | Each principal's last-seen email, display name, and IdP groups. Contains PII. | [`admin.identity_retention_days`](/docs/en/claude-apps-gateway-config#admin) since last activity, default 90 |
 
 When a developer leaves, delete any per-user cap via `DELETE /v1/organizations/spend_limits/{id}`; their spend and identity rows age out on the retention windows above. To erase one person immediately, for offboarding or a data subject access request (DSAR), run `DELETE FROM principal_emails WHERE principal = '<sub>'` directly against the gateway database. That removes the only table holding their email, name, and groups. The `spend` and `admin_audit` rows reference the pseudonymous OIDC `sub` only and age out on their own windows.

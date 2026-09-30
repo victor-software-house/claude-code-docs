@@ -16,7 +16,7 @@ Claude Code runs on several surfaces: the terminal, IDE extensions, a desktop ap
   <Tab title="Terminal">
     The full-featured CLI for working with Claude Code directly in your terminal. Edit files, run commands, and manage your entire project from the command line.
 
-    To install Claude Code, use one of the following methods:
+    To install Claude Code, open a terminal and run the command for your system. If you haven't used a terminal before, the [terminal guide](/docs/en/terminal-guide) shows how to open one and paste the command.
 
     <Tabs>
       <Tab title="Native Install (Recommended)">
@@ -37,6 +37,8 @@ Claude Code runs on several surfaces: the terminal, IDE extensions, a desktop ap
         ```batch theme={null}
         curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd
         ```
+
+        When the installer finishes, open a new terminal window and run `claude --version`. A working installation prints a version number. If your shell says `claude` isn't found or isn't recognized, the install directory isn't on your PATH yet: see [Fix your PATH](/docs/en/troubleshoot-install#command-not-found-claude-after-installation).
 
         If you see `The token '&&' is not a valid statement separator`, you're in PowerShell, not CMD. If you see `'irm' is not recognized as an internal or external command`, you're in CMD, not PowerShell. Your prompt shows `PS C:\` when you're in PowerShell and `C:\` without the `PS` when you're in CMD.
 
@@ -220,17 +222,17 @@ Each [surface](/docs/en/glossary#surface) connects to the same underlying Claude
 
 Beyond the [Terminal](/docs/en/quickstart), [VS Code](/docs/en/vs-code), [JetBrains](/docs/en/jetbrains), [Desktop](/docs/en/desktop), and [Web](/docs/en/claude-code-on-the-web) surfaces above, Claude Code integrates with CI/CD, chat, and browser workflows:
 
-| What I want to do                                                               | Best option                                                                                                     |
-| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Continue a local session from my phone or another device                        | [Remote Control](/docs/en/remote-control)                                                                            |
-| Push events from Telegram, Discord, iMessage, or my own webhooks into a session | [Channels](/docs/en/channels)                                                                                        |
-| Start a task locally, continue on mobile                                        | [`claude --cloud`](/docs/en/claude-code-on-the-web#from-terminal-to-cloud), then the [Claude mobile app](/docs/en/mobile) |
-| Run Claude on a recurring schedule                                              | [Routines](/docs/en/routines) or [Desktop scheduled tasks](/docs/en/desktop-scheduled-tasks)                              |
-| Automate PR reviews and issue triage                                            | [GitHub Actions](/docs/en/github-actions) or [GitLab CI/CD](/docs/en/gitlab-ci-cd)                                        |
-| Get automatic code review on every PR                                           | [GitHub Code Review](/docs/en/code-review)                                                                           |
-| Route bug reports from Slack to pull requests                                   | [Slack](/docs/en/slack)                                                                                              |
-| Debug live web applications                                                     | [Chrome](/docs/en/chrome)                                                                                            |
-| Build custom agents for your own workflows                                      | [Agent SDK](/docs/en/agent-sdk/overview)                                                                             |
+| What I want to do | Best option |
+| - | - |
+| Continue a local session from my phone or another device | [Remote Control](/docs/en/remote-control) |
+| Push events from Telegram, Discord, iMessage, or my own webhooks into a session | [Channels](/docs/en/channels) |
+| Start a task locally, continue on mobile | [`claude --cloud`](/docs/en/claude-code-on-the-web#from-terminal-to-cloud), then the [Claude mobile app](/docs/en/mobile) |
+| Run Claude on a recurring schedule | [Routines](/docs/en/routines) or [Desktop scheduled tasks](/docs/en/desktop-scheduled-tasks) |
+| Automate PR reviews and issue triage | [GitHub Actions](/docs/en/github-actions) or [GitLab CI/CD](/docs/en/gitlab-ci-cd) |
+| Get automatic code review on every PR | [GitHub Code Review](/docs/en/code-review) |
+| Route bug reports from Slack to pull requests | [Slack](/docs/en/slack) |
+| Debug live web applications | [Chrome](/docs/en/chrome) |
+| Build custom agents for your own workflows | [Agent SDK](/docs/en/agent-sdk/overview) |
 
 ## Next steps
 

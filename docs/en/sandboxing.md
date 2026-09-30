@@ -40,7 +40,7 @@ On macOS, there is nothing to install: sandboxing uses the built-in Seatbelt fra
   </Step>
 
   <Step title="Run a Bash command">
-    Ask Claude to run a command, such as a build or a test suite. By default, commands inside the sandbox can write to the working directory, the session temp directory, and any [directories you've added](/docs/en/permissions#additional-directories-grant-file-access-not-configuration) with `--add-dir`, `/add-dir`, or `permissions.additionalDirectories`.
+    Ask Claude to run a command, such as a build or a test suite. By default, commands inside the sandbox can write to the working directory, a [per-user temp directory](/docs/en/env-vars), and any [directories you've added](/docs/en/permissions#additional-directories-grant-file-access-not-configuration) with `--add-dir`, `/add-dir`, or `permissions.additionalDirectories`.
 
     The first time a command needs a new network domain, Claude Code prompts for approval; in [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), Claude instead names the hosts a command needs [on the command itself](#per-command-allowed-domains-in-auto-mode) for the classifier to review with it.
 
@@ -139,7 +139,7 @@ Even in auto-allow mode, the following still apply:
 * A bare `Bash` ask rule, or the equivalent `Bash(*)` form, is skipped for commands that run sandboxed; it still applies to commands that fall back to the regular permission flow. In [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), the rule isn't skipped: it prompts for sandboxed commands too, including read-only ones. Before v2.1.212, the skip applied in plan mode as well
 
 <Info>
-  Auto-allow mode works independently of your permission mode setting, except in [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) and, in auto mode, for a command that carries [per-command allowed domains](#per-command-allowed-domains-in-auto-mode). Even if you're not in "accept edits" mode, sandboxed Bash commands run automatically when auto-allow is enabled. This means Bash commands that modify files within the sandbox boundaries execute without prompting, even in Manual mode, where the file edit tools would prompt.
+  Auto-allow mode works independently of your permission mode setting, with three exceptions: [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), an auto mode command that carries [per-command allowed domains](#per-command-allowed-domains-in-auto-mode), and [server-side classifier review](/docs/en/permission-modes#how-the-classifier-evaluates-actions) of sandboxed commands in auto mode. Even if you're not in "accept edits" mode, sandboxed Bash commands run automatically when auto-allow is enabled. This means Bash commands that modify files within the sandbox boundaries execute without prompting, even in Manual mode, where the file edit tools would prompt.
 
   In plan mode, auto-allow doesn't widen approvals; see [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) for how Claude Code gates commands while you plan. Before v2.1.212, auto-allow ran sandboxed commands without a prompt in plan mode too.
 </Info>
@@ -165,7 +165,7 @@ Before v2.1.260, strict sandbox mode sandboxed shell-mode commands in every sess
 
 #### Temporary directories
 
-The session temp directory is writable inside the sandbox by default, alongside the working directory. Unless you [disable filesystem isolation](#disable-filesystem-isolation), Claude Code sets `$TMPDIR` to this directory for sandboxed commands, so tools that write temporary files work without extra configuration.
+A per-user temp directory is writable inside the sandbox by default, alongside the working directory. Unless you [disable filesystem isolation](#disable-filesystem-isolation), Claude Code sets `$TMPDIR` to this directory for sandboxed commands, so tools that write temporary files work without extra configuration.
 
 Unsandboxed commands inherit your shell's `$TMPDIR` when it is set, so while filesystem isolation is on, sandboxed and unsandboxed commands resolve `$TMPDIR` to different directories. If your shell leaves `$TMPDIR` unset or empty, an unsandboxed command that references `$TMPDIR` receives your [`CLAUDE_CODE_TMPDIR`](/docs/en/env-vars) override, or the operating system's temp directory when you haven't set one or the override is a long path, so the variable doesn't expand to an empty string. To pass temporary files between the two, write them under the working directory instead.
 
@@ -173,7 +173,7 @@ Unsandboxed commands inherit your shell's `$TMPDIR` when it is set, so while fil
 
 Customize sandbox behavior through your `settings.json` file. See [Settings](/docs/en/settings-reference#sandbox-settings) for the complete configuration reference.
 
-By default, sandboxed commands can write to the current working directory, the session temp directory, and any [directories you've added](/docs/en/permissions#additional-directories-grant-file-access-not-configuration) with `--add-dir`, `/add-dir`, or `permissions.additionalDirectories`. If subprocess commands like `kubectl`, `terraform`, or `npm` need to write outside those directories, use `sandbox.filesystem.allowWrite` to grant access to specific paths:
+By default, sandboxed commands can write to the current working directory, the per-user temp directory, and any [directories you've added](/docs/en/permissions#additional-directories-grant-file-access-not-configuration) with `--add-dir`, `/add-dir`, or `permissions.additionalDirectories`. If subprocess commands like `kubectl`, `terraform`, or `npm` need to write outside those directories, use `sandbox.filesystem.allowWrite` to grant access to specific paths:
 
 ```json theme={null}
 {
@@ -196,21 +196,21 @@ When you edit these filesystem lists during a session, Claude Code [applies the 
 
 Path prefixes control how paths are resolved:
 
-| Prefix            | Meaning                                                                                | Example                                                                   |
-| :---------------- | :------------------------------------------------------------------------------------- | :------------------------------------------------------------------------ |
-| `/`               | Absolute path from filesystem root                                                     | `/tmp/build` stays `/tmp/build`                                           |
-| `~/`              | Relative to home directory                                                             | `~/.kube` becomes `$HOME/.kube`                                           |
+| Prefix | Meaning | Example |
+| :- | :- | :- |
+| `/` | Absolute path from filesystem root | `/tmp/build` stays `/tmp/build` |
+| `~/` | Relative to home directory | `~/.kube` becomes `$HOME/.kube` |
 | `./` or no prefix | Relative to the project root for project settings, or to `~/.claude` for user settings | `./output` in `.claude/settings.json` resolves to `<project-root>/output` |
 
 This syntax differs from [Read and Edit permission rules](/docs/en/permissions#read-and-edit), which use `//path` for absolute and `/path` for project-relative. Sandbox filesystem paths use standard conventions: `/tmp/build` is absolute. For how Claude Code treats a trailing slash or a wildcard in these paths, see [Sandbox path prefixes](/docs/en/settings-reference#sandbox-path-prefixes).
 
 You can also deny write or read access using `sandbox.filesystem.denyWrite` and `sandbox.filesystem.denyRead`, and re-allow specific paths within a denied region using `sandbox.filesystem.allowRead`. When read rules overlap, the rule with the narrower path applies:
 
-| Example rules                                           | Result                                                                                                                                                                                                   |
-| :------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `"denyRead": ["~/"]` with `"allowRead": ["~/projects"]` | `~/projects` is readable and the rest of the home directory stays blocked. The narrower allow re-opens that part of the denied region                                                                    |
-| `"allowRead": ["~/"]` with `"denyRead": ["~/.env"]`     | `~/.env` stays blocked and the rest of the home directory is readable. The deny holds inside a wider allow, so a broad allow can't silently re-expose a secret                                           |
-| `"allowRead": ["~/"]` with `"denyRead": ["~/**/.env"]`  | Every `.env` under the home directory stays blocked and the rest is readable. A [wildcard deny](/docs/en/settings-reference#sandbox-path-prefixes) holds inside a wider allow the same way an exact path does |
+| Example rules | Result |
+| :- | :- |
+| `"denyRead": ["~/"]` with `"allowRead": ["~/projects"]` | `~/projects` is readable and the rest of the home directory stays blocked. The narrower allow re-opens that part of the denied region |
+| `"allowRead": ["~/"]` with `"denyRead": ["~/.env"]` | `~/.env` stays blocked and the rest of the home directory is readable. The deny holds inside a wider allow, so a broad allow can't silently re-expose a secret |
+| `"allowRead": ["~/"]` with `"denyRead": ["~/**/.env"]` | Every `.env` under the home directory stays blocked and the rest is readable. A [wildcard deny](/docs/en/settings-reference#sandbox-path-prefixes) holds inside a wider allow the same way an exact path does |
 
 The example below blocks reading from the entire home directory while still allowing reads from the current project. Place it in your project's `.claude/settings.json`, because the relative path `.` resolves to the project root only when the configuration lives in project settings:
 
@@ -266,12 +266,12 @@ Because turning filesystem isolation off widens what sandboxed commands can do, 
 
 Whether a managed `credentials.files` entry pins `filesystem.disabled`, locking the key to managed settings so developers can't turn filesystem isolation off, depends on the entry's `mode` and what happens to the entry when the sandbox starts:
 
-| Managed entry                                                                                                  | Pins `filesystem.disabled`   | What protects the file when isolation is off                                                                                    |
-| -------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `"mode": "deny"`                                                                                               | Yes                          | Nothing: the read block is part of the filesystem layer                                                                         |
-| `"mode": "mask"`, applied as a mask                                                                            | No                           | Masking itself: the [sentinel copy and proxy](#mask-credential-files) on Linux and WSL2, the sandbox's own read rules on macOS  |
-| `"mode": "mask"`, [fallen back to `deny`](#mask-credential-files) at setup                                     | No                           | Nothing, same as `deny`. List a path that can't be masked, such as a directory, as an explicit `deny` entry, which pins the key |
-| `"mode": "mask"`, [degraded to `deny` by validation](/docs/en/managed-settings#invalid-entries-in-managed-settings) | Yes, like an explicit `deny` | Nothing, same as `deny`                                                                                                         |
+| Managed entry | Pins `filesystem.disabled` | What protects the file when isolation is off |
+| - | - | - |
+| `"mode": "deny"` | Yes | Nothing: the read block is part of the filesystem layer |
+| `"mode": "mask"`, applied as a mask | No | Masking itself: the [sentinel copy and proxy](#mask-credential-files) on Linux and WSL2, the sandbox's own read rules on macOS |
+| `"mode": "mask"`, [fallen back to `deny`](#mask-credential-files) at setup | No | Nothing, same as `deny`. List a path that can't be masked, such as a directory, as an explicit `deny` entry, which pins the key |
+| `"mode": "mask"`, [degraded to `deny` by validation](/docs/en/managed-settings#invalid-entries-in-managed-settings) | Yes, like an explicit `deny` | Nothing, same as `deny` |
 
 A fallback happens when the sandbox starts, after Claude Code has already read the settings the pin check runs on, so a fallen-back entry never pins. Validation rewrites an invalid entry to `deny` while settings load, so a degraded entry pins like one you wrote as `deny`.
 
@@ -279,22 +279,22 @@ A fallback happens when the sandbox starts, after Claude Code has already read t
 
 Setting `filesystem.disabled` lifts the protections the filesystem layer itself enforces. Protections that other layers enforce keep applying:
 
-| Protection                                                                               | With filesystem isolation off                                                                                                                                |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `filesystem.denyRead` and [`credentials.files`](#protect-credentials) `deny` read blocks | Not enforced. The filesystem layer applies both                                                                                                              |
-| `credentials.envVars` `deny` and `mask` entries                                          | Enforced. Environment variable scrubbing is independent of the filesystem layer                                                                              |
-| [`credentials.files` `mask` entries](#mask-credential-files) applied as masks            | Enforced: masking is independent of the filesystem layer. An entry that [fell back to `deny`](#mask-credential-files) is not enforced, like any `deny` entry |
+| Protection | With filesystem isolation off |
+| - | - |
+| `filesystem.denyRead` and [`credentials.files`](#protect-credentials) `deny` read blocks | Not enforced. The filesystem layer applies both |
+| `credentials.envVars` `deny` and `mask` entries | Enforced. Environment variable scrubbing is independent of the filesystem layer |
+| [`credentials.files` `mask` entries](#mask-credential-files) applied as masks | Enforced: masking is independent of the filesystem layer. An entry that [fell back to `deny`](#mask-credential-files) is not enforced, like any `deny` entry |
 
 Two other things change:
 
-* Sandboxed commands inherit your shell's `$TMPDIR` instead of the session temp directory, because every temp directory is writable and Claude Code no longer redirects commands to the session one.
+* Sandboxed commands inherit your shell's `$TMPDIR` instead of the per-user temp directory, because every temp directory is writable and Claude Code no longer redirects commands to the per-user one.
 
   On Linux the variable is often unset in the parent shell. The Bash tool guidance tells Claude to create scratch directories with `mktemp -d` instead of relying on `$TMPDIR`.
 * [`autoAllowBashIfSandboxed`](/docs/en/settings-reference#sandbox-autoallowbashifsandboxed) still defaults to `true`, so sandboxed commands keep running without prompts. Set it to `false` to prompt for sandboxed commands.
 
 ### Protect credentials
 
-The `sandbox.credentials` setting declares credential files and environment variables to protect from sandboxed commands. Each entry names a file path or an environment variable and a `mode`. The dedicated `credentials` block keeps credential rules grouped together and separate from general filesystem rules. Requires Claude Code v2.1.187 or later.
+The `sandbox.credentials` setting declares credential files and environment variables to protect from sandboxed commands. Each entry names a file path or an environment variable and a `mode`. The dedicated `credentials` block keeps credential rules grouped together and separate from general filesystem rules.
 
 For entries with `"mode": "deny"`, file paths are denied for reads inside the sandbox, the same restriction that `filesystem.denyRead` applies, and environment variables are unset before each sandboxed command runs. The file protection is part of the filesystem layer, so it doesn't apply if you [disable filesystem isolation](#disable-filesystem-isolation); the environment variable protection still does.
 
@@ -428,11 +428,11 @@ Like `mask` entries, `awsPairs` is honored only from user settings, managed sett
 
 Three AWS request forms carry signatures the proxy can't recompute. When such a request is signed with a masked pair's placeholder, the proxy fails it rather than forward a broken signature; requests signed with unmasked credentials are never affected. The [`credentials.sigv4`](/docs/en/settings-reference#sandbox-credentials-sigv4) setting, which requires Claude Code v2.1.224 or later, relaxes this per form: setting a form's key to `passthrough` forwards the request with its placeholder-derived signature, so the calling tool receives AWS's own rejection response instead of a proxy error. Like `awsPairs`, `sigv4` is honored only from user settings, managed settings, and the `--settings` CLI flag.
 
-| Request form                  | `sigv4` key | Why the proxy can't re-sign it                                                                    |
-| :---------------------------- | :---------- | :------------------------------------------------------------------------------------------------ |
+| Request form | `sigv4` key | Why the proxy can't re-sign it |
+| :- | :- | :- |
 | aws-chunked streaming uploads | `streaming` | Per-chunk signatures chain off the seed signature, so re-signing would require rewriting the body |
-| Presigned URLs                | `presigned` | The signature lives in the URL itself, with no `Authorization` header                             |
-| SigV4A asymmetric signatures  | `sigv4a`    | There is no shared-key HMAC to recompute                                                          |
+| Presigned URLs | `presigned` | The signature lives in the URL itself, with no `Authorization` header |
+| SigV4A asymmetric signatures | `sigv4a` | There is no shared-key HMAC to recompute |
 
 #### Mask credential files
 
@@ -492,9 +492,10 @@ Two optional fields refine how matching behaves. Both apply only when `mode` is 
 
 The sandboxed Bash tool restricts file system access to specific directories:
 
-* **Default write behavior**: read and write access to the current working directory and its subdirectories, any directories you've added with `--add-dir`, `/add-dir`, or [`permissions.additionalDirectories`](/docs/en/settings-reference#permissions-additionaldirectories), plus the session temp directory that `$TMPDIR` points to
+* **Default write behavior**: read and write access to the current working directory and its subdirectories, any directories you've added with `--add-dir`, `/add-dir`, or [`permissions.additionalDirectories`](/docs/en/settings-reference#permissions-additionaldirectories), plus the per-user temp directory that `$TMPDIR` points to
 * **Default read behavior**: read access to the entire computer, except certain denied directories. Note that this default still allows reading credential files such as `~/.aws/credentials` and `~/.ssh/`. Use [`sandbox.credentials`](#protect-credentials) to block reads of these files and unset secret environment variables, or add the paths to `denyRead`.
-* **Blocked access**: cannot modify files outside the working directory, added directories, and session temp directory without explicit permission, including shell configuration files such as `~/.bashrc` and system binaries in `/bin/`
+* **Read block**: with [`permissions.blockReadsOutsideWorkingDirectories`](/docs/en/settings-reference#permissions-blockreadsoutsideworkingdirectories) on, sandboxed commands also lose read access to your home directory and the other directories that hold user files, apart from the paths that [Sandboxed commands under the block](/docs/en/settings-reference#sandboxed-commands-under-the-block) lists. That section also says when this part of the block doesn't apply.
+* **Blocked access**: cannot modify files outside the working directory, added directories, and the per-user temp directory without explicit permission, including shell configuration files such as `~/.bashrc` and system binaries in `/bin/`
 * **Git worktrees**: when the working directory is a [linked git worktree](/docs/en/worktrees), the sandbox also allows writes to the main repository's shared `.git` directory so commands such as `git commit` can update refs and the index. Writes to `hooks/` and `config` inside that directory remain denied.
 * **Configurable**: define custom allowed and denied paths through settings
 
@@ -506,7 +507,7 @@ Inside the directories that sandboxed commands can write to, the sandbox still d
 
 * **In your working directory and the directories above it**: the `.claude` settings files, the `.claude/skills`, `.claude/agents`, `.claude/commands`, and `.claude/hooks` directories, `.mcp.json`, and the files Claude Code runs on its own, such as `.claude/workflows` and `.claude/scheduled_tasks.json`
 * **In your working directory only**: shell startup files such as `.bashrc` and `.zshrc`, `.gitconfig`, the `.vscode` and `.idea` directories, and `hooks` and `config` inside `.git`
-* **Files that would turn your working directory into a bare git repository**: `HEAD`, `objects`, and `refs` at the top level, plus `config` and `hooks` there when a `HEAD` sits beside them. A file named `config` is denied even with no `HEAD`. On Linux and WSL2, the sandbox deletes a top-level `HEAD` file or `objects` or `refs` directory that appears while a sandboxed command is running
+* **Files that would turn your working directory into a bare git repository**: `HEAD`, `objects`, and `refs` at the top level, plus existing `config` and `hooks` entries there when a `HEAD` sits beside them. A file named `config` is denied even with no `HEAD`. On Linux and WSL2, the sandbox deletes a top-level `HEAD` file or `objects` or `refs` directory that appears while a sandboxed command is running
 * **In `~/.claude`, or the directory `CLAUDE_CONFIG_DIR` points to**: most of its contents, plus `~/.claude.json` and the `.credentials.json` credential store
 
 If a symlink appears at a protected settings file's path during the session, the sandbox also denies writes to the file it points to, starting with the next command.
@@ -586,17 +587,17 @@ The two layers also differ in how they are enforced. Claude Code evaluates permi
 
 Filesystem and network restrictions are configured through both sandbox settings and permission rules:
 
-| Setting or rule                                                  | What it does                                                                                      |
-| :--------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
-| `sandbox.filesystem.allowWrite`                                  | Grants subprocess write access to paths outside the working directory                             |
-| `sandbox.filesystem.denyWrite` and `sandbox.filesystem.denyRead` | Block subprocess access to specific paths                                                         |
-| `sandbox.filesystem.allowRead`                                   | Re-allows reading specific paths within a `denyRead` region                                       |
-| [`sandbox.filesystem.disabled`](#disable-filesystem-isolation)   | Turns the filesystem layer off entirely while keeping network isolation                           |
-| `Edit` allow rules                                               | Grant write access to specific paths, the same way `sandbox.filesystem.allowWrite` does           |
-| `Read` and `Edit` deny rules                                     | Block access to specific files or directories                                                     |
-| `WebFetch(domain:...)` allow and deny rules                      | Control domain access                                                                             |
-| Sandbox `allowedDomains`                                         | Controls which domains Bash commands can reach                                                    |
-| Sandbox `deniedDomains`                                          | Blocks specific domains even when a broader `allowedDomains` wildcard would otherwise permit them |
+| Setting or rule | What it does |
+| :- | :- |
+| `sandbox.filesystem.allowWrite` | Grants subprocess write access to paths outside the working directory |
+| `sandbox.filesystem.denyWrite` and `sandbox.filesystem.denyRead` | Block subprocess access to specific paths |
+| `sandbox.filesystem.allowRead` | Re-allows reading specific paths within a `denyRead` region |
+| [`sandbox.filesystem.disabled`](#disable-filesystem-isolation) | Turns the filesystem layer off entirely while keeping network isolation |
+| `Edit` allow rules | Grant write access to specific paths, the same way `sandbox.filesystem.allowWrite` does |
+| `Read` and `Edit` deny rules | Block access to specific files or directories |
+| `WebFetch(domain:...)` allow and deny rules | Control domain access |
+| Sandbox `allowedDomains` | Controls which domains Bash commands can reach |
+| Sandbox `deniedDomains` | Blocks specific domains even when a broader `allowedDomains` wildcard would otherwise permit them |
 
 Paths and domains from both sandbox settings and permission rules are merged into the final sandbox configuration.
 
@@ -606,11 +607,11 @@ The [claude-code repository's examples directory](https://github.com/anthropics/
 
 `/sandbox` is not a [permission mode](/docs/en/permission-modes). Permission modes decide whether a tool call runs and whether you are prompted first, while the sandbox restricts what a Bash command can access once it runs. They differ in what they control and what replaces the per-action prompt:
 
-|                                                                    | What it controls                            | What replaces the prompt                                                                                                                                                                     |
-| :----------------------------------------------------------------- | :------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/sandbox`                                                         | What a Bash command can access once it runs | The sandbox boundary itself, in [auto-allow mode](#sandbox-modes)                                                                                                                            |
-| [Auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) | Whether each tool call runs                 | A classifier that reviews actions                                                                                                                                                            |
-| `--dangerously-skip-permissions`                                   | Whether each tool call runs                 | Nothing. [Protected path](/docs/en/permission-modes#protected-paths) checks are also skipped; the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves) still apply |
+| | What it controls | What replaces the prompt |
+| :- | :- | :- |
+| `/sandbox` | What a Bash command can access once it runs | The sandbox boundary itself, in [auto-allow mode](#sandbox-modes) |
+| [Auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) | Whether each tool call runs | A classifier that reviews actions |
+| `--dangerously-skip-permissions` | Whether each tool call runs | Nothing. [Protected path](/docs/en/permission-modes#protected-paths) checks are also skipped; the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves) still apply |
 
 The sandbox's [auto-allow mode](#sandbox-modes) is separate from [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode): auto-allow approves Bash commands because the sandbox boundary contains them, while auto mode uses a classifier to review actions. The two work independently and can be combined, with the exceptions listed under [Sandbox modes](#sandbox-modes). To choose an isolation boundary for unattended runs, see [Sandbox environments](/docs/en/sandbox-environments#how-isolation-relates-to-permission-modes). For a table of common permission mode and sandbox pairings with the flags that start each one, see [Common setups](/docs/en/permission-modes#common-setups).
 

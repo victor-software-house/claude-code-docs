@@ -205,15 +205,19 @@ When the plugin is active, it runs a local MCP server that the CLI connects to a
 
 The server is named `ide` and is hidden from `/mcp` because there's nothing to configure. If your organization uses a [`PreToolUse` hook](/docs/en/hooks#pretooluse) to allowlist MCP tools, though, you'll need to know it exists.
 
-**Selection and open-file context.** While connected, the CLI includes your current editor selection and the path of the active file as context on each prompt you send. The transcript shows a `⧉ Selected N lines from <file>` line when this happens. To exclude a sensitive file such as `.env`, add a [`Read` deny rule](/docs/en/permissions#read-and-edit) for its path. A matching deny rule prevents both the selected text and the open-file notice for that file from reaching Claude.
+**Selection and open-file context.** While connected, the CLI includes your current editor selection and the path of the active file as context on each prompt you send. The transcript shows a `⧉ Selected N lines from <file>` line when this happens.
+
+If you [queue a message while Claude works](/docs/en/interactive-mode#queue-messages-while-claude-works), it keeps the selection you had when you pressed `Enter`, whatever you select afterward.
+
+To exclude a sensitive file such as `.env`, add a [`Read` deny rule](/docs/en/permissions#read-and-edit) for its path. A matching deny rule prevents both the selected text and the open-file notice for that file from reaching Claude.
 
 **Transport and authentication.** The server listens on an OS-assigned ephemeral port, and the port is not configurable. The transport is unencrypted `ws://`; on loopback, any process that could capture the traffic can also read the token from the lock file, so TLS would not add protection against a local attacker. Each IDE start generates a fresh random auth token, writes it to a lock file at `~/.claude/ide/<port>.lock`, and the CLI must present it as the `X-Claude-Code-Ide-Authorization` header to connect. If `CLAUDE_CONFIG_DIR` is set, the lock file is written to `$CLAUDE_CONFIG_DIR/ide/` instead.
 
 **Tools exposed to the model.** The server hosts several tools, but only one is visible to the model. The rest are internal RPC the CLI uses for its own UI, such as opening diffs and reading selections, and are filtered out before the tool list reaches Claude.
 
-| Tool name (as seen by hooks) | What it does                                                                                                                                                                                                  | Read-only |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| `mcp__ide__getDiagnostics`   | Returns the IDE's inspection diagnostics, the errors and warnings shown in the editor. Each call covers one file: the file Claude specifies, or the file in your active editor if Claude doesn't specify one. | Yes       |
+| Tool name (as seen by hooks) | What it does | Read-only |
+| - | - | - |
+| `mcp__ide__getDiagnostics` | Returns the IDE's inspection diagnostics, the errors and warnings shown in the editor. Each call covers one file: the file Claude specifies, or the file in your active editor if Claude doesn't specify one. | Yes |
 
 The JetBrains plugin does not expose a code-execution tool to the model.
 

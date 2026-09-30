@@ -19,11 +19,11 @@ Use a goal for substantial work with a verifiable end state:
 
 Three approaches keep the current session running between prompts. Pick based on what should start the next turn:
 
-| Approach                                                            | Next turn starts when                                                                                                                                                                      | Stops when                                                                                                                                                                                      |
-| :------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/goal`                                                             | The previous turn finishes, or, in an interactive session, an [idle check-in](#background-work-defers-evaluation) or an [automatic retry](#other-errors-retry-or-pause-the-goal) comes due | A model confirms the condition is met or judges it impossible, or a turn fails on [an error you have to fix](#errors-you-have-to-fix-clear-the-goal), or you run [`/goal clear`](#clear-a-goal) |
-| [`/loop`](/docs/en/scheduled-tasks#run-a-prompt-repeatedly-with-%2Floop) | A time interval elapses                                                                                                                                                                    | You stop it, or Claude decides the work is done                                                                                                                                                 |
-| [Stop hook](/docs/en/hooks-guide#prompt-based-hooks)                     | The previous turn finishes                                                                                                                                                                 | Your own script or prompt decides                                                                                                                                                               |
+| Approach | Next turn starts when | Stops when |
+| :- | :- | :- |
+| `/goal` | The previous turn finishes, or, in an interactive session, an [idle check-in](#background-work-defers-evaluation) or an [automatic retry](#other-errors-retry-or-pause-the-goal) comes due | A model confirms the condition is met or judges it impossible, or a turn fails on [an error you have to fix](#errors-you-have-to-fix-clear-the-goal), or you run [`/goal clear`](#clear-a-goal) |
+| [`/loop`](/docs/en/scheduled-tasks#run-a-prompt-repeatedly-with-%2Floop) | A time interval elapses | You stop it, or Claude decides the work is done |
+| [Stop hook](/docs/en/hooks-guide#prompt-based-hooks) | The previous turn finishes | Your own script or prompt decides |
 
 `/goal` and a Stop hook both fire after every turn. `/goal` is a session-scoped shortcut: you type a condition and it's active for the current session only. A Stop hook lives in your settings file, applies to every session in its scope, and can run a script for deterministic checks or a prompt for model-evaluated ones.
 
@@ -133,7 +133,7 @@ When a turn fails, Claude Code clears the goal if the error is one you have to f
 
 If a turn fails on an error that won't clear until you fix it, Claude Code clears the goal and prints a warning naming the cause. The warning starts with `Goal cleared after an unrecoverable error` and ends with `Run /goal again to continue`. Fix the cause, then [set the goal again](#set-a-goal) with `/goal <condition>`. Four kinds of failure clear the goal:
 
-* An authentication failure, when Claude Code manages its own credentials. When a host manages them for you, such as the desktop app, the VS Code extension, or a [cloud session](/docs/en/claude-code-on-the-web), Claude Code leaves the goal active because the host restores access on its own.
+* An authentication failure, when Claude Code manages its own credentials. When a host manages them for you, such as the desktop app or a [cloud session](/docs/en/claude-code-on-the-web), Claude Code leaves the goal active because the host restores access on its own.
 * An exhausted credit balance
 * A context overflow that [auto-compaction](/docs/en/model-config#set-the-auto-compact-window) couldn't clear
 * A model that isn't available

@@ -44,7 +44,7 @@ Check these before planning a rollout:
 * **Zero Data Retention**: unavailable for organizations with [Zero Data Retention](/docs/en/zero-data-retention) enabled.
 * **Model inference**: sessions use the Anthropic API, and inference can't be routed through [Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry](/docs/en/third-party-integrations), or an [LLM gateway](/docs/en/llm-gateway).
 * **Surfaces**: sessions started from [claude.ai/code](https://claude.ai/code), the mobile and desktop apps, [scheduled routines](/docs/en/routines), and the terminal, with [`claude --cloud`](/docs/en/claude-code-on-the-web#from-terminal-to-cloud) or an [`--environment` dispatch](/docs/en/self-hosted-environments-testing#run-the-test-loop), can run in self-hosted environments. [Claude Tag](https://claude.com/docs/claude-tag/overview) sessions can run in them too, but Claude can't use [Access bundles](https://claude.com/docs/claude-tag/concepts/glossary#access-bundle) in those sessions yet. [Claude Security](/docs/en/claude-security) and [Code Review](/docs/en/code-review) sessions don't route to them yet. Support for those two surfaces follows separately.
-* **Repositories**: sessions check out repositories from GitHub; see [GitHub authentication options](/docs/en/claude-code-on-the-web#github-authentication-options).
+* **Repositories**: sessions check out repositories from GitHub; see [GitHub authentication options](/docs/en/claude-code-on-the-web#github-authentication-options). For a GitHub Enterprise Server host, see its [network requirements](/docs/en/github-enterprise-server#network-requirements).
 * **Billing**: sessions in a self-hosted environment consume your organization's Claude Code usage the same way sessions in Anthropic-hosted environments do.
 
 ## Why self-host
@@ -65,12 +65,12 @@ Environments are managed on the **Cloud environments** page in claude.ai admin s
 
 These terms appear throughout the self-hosted pages:
 
-| Term               | What it is                                                                                                                                                                                              |
-| :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Environment        | A named group of your runners, created in claude.ai settings. Sessions are routed to an environment, not to an individual runner.                                                                       |
-| Environment secret | The single shared credential runners use to authenticate and register with the environment. Shown once at environment creation, labeled **environment key** in the admin UI.                            |
-| Runner             | The long-lived process you deploy. A runner registers with the environment, receives a runner token, and polls for sessions.                                                                            |
-| Session            | One Claude Code task, started from claude.ai, the mobile app, or another Anthropic surface such as a scheduled routine or an agent. Each session runs as a child Claude Code process the runner spawns. |
+| Term | What it is |
+| :- | :- |
+| Environment | A named group of your runners, created in claude.ai settings. Sessions are routed to an environment, not to an individual runner. |
+| Environment secret | The single shared credential runners use to authenticate and register with the environment. Shown once at environment creation, labeled **environment key** in the admin UI. |
+| Runner | The long-lived process you deploy. A runner registers with the environment, receives a runner token, and polls for sessions. |
+| Session | One Claude Code task, started from claude.ai, the mobile app, or another Anthropic surface such as a scheduled routine or an agent. Each session runs as a child Claude Code process the runner spawns. |
 
 In API fields, token claims, and metric names, the environment appears as `pool`, and the environment ID is the `pool_id`. The [reference](/docs/en/self-hosted-environments-reference) maps the two spellings, including the deprecated `pool` flag names.
 

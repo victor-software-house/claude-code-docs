@@ -626,13 +626,14 @@ export const PromptLibrary = ({text = {}, labels = {}, tagLabels = {}, phaseLabe
       return base + (href.startsWith('/en/') ? '/' + locale + href.slice(3) : href);
     };
   }, []);
+  const SAFE_HREF = /^(\/(?![\/\\\s])|#|https?:\/\/)/;
   const linkify = s => {
     const out = [];
     let last = 0;
     const re = /\[([^\]]+)\]\(([^)]+)\)/g;
     for (let m; m = re.exec(s); ) {
       if (m.index > last) out.push(s.slice(last, m.index));
-      out.push(<a key={m.index} href={doc(m[2])}>{m[1]}</a>);
+      out.push(SAFE_HREF.test(m[2]) ? <a key={m.index} href={doc(m[2])}>{m[1]}</a> : m[1]);
       last = re.lastIndex;
     }
     if (last < s.length) out.push(s.slice(last));
@@ -776,7 +777,7 @@ export const PromptLibrary = ({text = {}, labels = {}, tagLabels = {}, phaseLabe
             </div>
             <div className="pl-label">{L.whyWorks}</div>
             <div className="pl-teaches">{linkify(p.teaches)}</div>
-            {p.nextHref && p.next && <div className="pl-next">
+            {p.nextHref && p.next && SAFE_HREF.test(p.nextHref) && <div className="pl-next">
                 <span className="pl-next-label">{L.makeItStick}</span>
                 <a href={doc(p.nextHref)}>{codeify(p.next)} →</a>
               </div>}
@@ -1202,7 +1203,7 @@ export const text = {
   },
   "migrate-a-pattern-across": {
     title: "Migrate a pattern across the codebase",
-    teaches: "Describe the old pattern and the new one. Asking Claude to identify every place first means the call sites are listed in the response, so you can check none were missed. For a migration across many files, run [/batch](/docs/en/commands). Claude splits the work into units for you to approve, then background subagents make the changes and open one pull request per unit."
+    teaches: "Describe the old pattern and the new one. Asking Claude to identify every place first means the call sites are listed in the response, so you can check none were missed. For a migration across many files, run [/batch](/docs/en/commands). Claude splits the work into units for you to approve, then background subagents make the changes."
   },
   "optimize-against-a-measurable": {
     title: "Optimize against a measurable target",

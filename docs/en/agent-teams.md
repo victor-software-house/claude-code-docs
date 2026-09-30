@@ -35,13 +35,13 @@ Both agent teams and [subagents](/docs/en/sub-agents) let you parallelize work, 
   <img src="https://mintcdn.com/claude-code/nsvRFSDNfpSU5nT7/images/subagents-vs-agent-teams-dark.png?fit=max&auto=format&n=nsvRFSDNfpSU5nT7&q=85&s=d573a037540f2ada6a9ae7d8285b46fd" className="hidden dark:block" alt="Diagram comparing subagent and agent team architectures. Subagents are spawned by the main agent, do work, and report results back. Agent teams coordinate through a shared task list, with teammates communicating directly with each other." width="4245" height="1615" data-path="images/subagents-vs-agent-teams-dark.png" />
 </Frame>
 
-|                   | Subagents                                                                                                                                           | Agent teams                                                                                                                                   |
-| :---------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Context**       | Own context window; results return to the caller                                                                                                    | Own context window; fully independent                                                                                                         |
-| **Communication** | Return a result to the caller. Subagents that Claude named when it spawned them can also [message each other](/docs/en/sub-agents#what-loads-at-startup) | Teammates message each other directly                                                                                                         |
-| **Coordination**  | Main agent manages all work                                                                                                                         | Self-coordination through messages, plus a shared task list for [agents that have the Task tools](/docs/en/tools-reference#task-tool-availability) |
-| **Best for**      | Focused tasks where only the result matters                                                                                                         | Complex work requiring discussion and collaboration                                                                                           |
-| **Token cost**    | Lower: results summarized back to main context                                                                                                      | Higher: each teammate is a separate Claude instance                                                                                           |
+| | Subagents | Agent teams |
+| :- | :- | :- |
+| **Context** | Own context window; results return to the caller | Own context window; fully independent |
+| **Communication** | Return a result to the caller. Subagents that Claude named when it spawned them can also [message each other](/docs/en/sub-agents#what-loads-at-startup) | Teammates message each other directly |
+| **Coordination** | Main agent manages all work | Self-coordination through messages, plus a shared task list for [agents that have the Task tools](/docs/en/tools-reference#task-tool-availability) |
+| **Best for** | Focused tasks where only the result matters | Complex work requiring discussion and collaboration |
+| **Token cost** | Lower: results summarized back to main context | Higher: each teammate is a separate Claude instance |
 
 Use subagents when you need quick, focused workers that report back. Use agent teams when teammates need to share findings, challenge each other, and coordinate on their own.
 
@@ -106,7 +106,7 @@ Agent teams support two display modes:
 
 The default is `"in-process"`. Set `"auto"` to enable split panes when you're already running inside a tmux session, or when your terminal is iTerm2 with the `it2` CLI installed, falling back to in-process otherwise. The `"tmux"` setting enables split-pane mode and auto-detects whether to use tmux or iTerm2 based on your terminal.
 
-As of v2.1.186, set `"iterm2"` to use iTerm2 native split panes explicitly. This mode requires the [`it2` CLI](https://github.com/mkusaka/it2) and shows an error with the install command if `it2` is missing. The setup prompt that offers to install `it2` or switch to tmux appears under `"auto"` or `"tmux"` when your terminal is iTerm2 and tmux is available as a fallback.
+Set `"iterm2"` to use iTerm2 native split panes explicitly. This mode requires the [`it2` CLI](https://github.com/mkusaka/it2) and shows an error with the install command if `it2` is missing. The setup prompt that offers to install `it2` or switch to tmux appears under `"auto"` or `"tmux"` when your terminal is iTerm2 and tmux is available as a fallback.
 
 To override the default, set [`teammateMode`](/docs/en/settings-reference#teammatemode) in `~/.claude/settings.json`:
 
@@ -228,12 +228,12 @@ Claude also names ordinary subagents on its own so it can message them later. Th
 
 An agent team consists of:
 
-| Component     | Role                                                                    |
-| :------------ | :---------------------------------------------------------------------- |
+| Component | Role |
+| :- | :- |
 | **Team lead** | The main Claude Code session that spawns teammates and coordinates work |
-| **Teammates** | Separate Claude Code instances that each work on assigned tasks         |
-| **Task list** | Shared list of work items that teammates claim and complete             |
-| **Mailbox**   | Messaging system for communication between agents                       |
+| **Teammates** | Separate Claude Code instances that each work on assigned tasks |
+| **Task list** | Shared list of work items that teammates claim and complete |
+| **Mailbox** | Messaging system for communication between agents |
 
 Each agent's mailbox is a JSON file at `~/.claude/teams/{team-name}/inboxes/{agent-name}.json`. Claude Code validates every entry when it reads a mailbox file. Entries that don't match the message format are reported as errors and removed from the file; the valid messages are still delivered. Before v2.1.207, a single malformed mailbox entry caused a repeated error every second and blocked delivery for that mailbox until you deleted the file manually.
 
@@ -295,7 +295,9 @@ In [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), the 
 
 ### Context and communication
 
-Each teammate has its own context window. When spawned, a teammate loads the same project context as a regular session: CLAUDE.md, MCP servers, and skills. It also receives the spawn prompt from the lead. The lead's conversation history does not carry over.
+Each teammate has its own context window. When spawned, a teammate loads the same project context as a regular session: CLAUDE.md, MCP servers, and skills. If you start the lead with [`--setting-sources`](/docs/en/cli-reference#cli-flags), teammates load from the same restricted list of sources. Before v2.1.281, [split-pane](#choose-a-display-mode) teammates loaded every settings source.
+
+A teammate also receives the spawn prompt from the lead. The lead's conversation history does not carry over.
 
 **How teammates share information:**
 

@@ -37,7 +37,7 @@ claude
 
 To verify a setup that exports metrics, check your backend for the `claude_code.session.count` metric, which Claude Code emits when a session starts. To verify a logs-only setup, submit a prompt and check for the `claude_code.user_prompt` event.
 
-If nothing arrives, run `claude --debug` and check the debug log. Claude Code reports failures from the exporters you configure as `[3P telemetry]` errors, where 3P means third-party. Lines prefixed `[Anthropic telemetry]` describe [Anthropic's separate operational telemetry](/docs/en/data-usage#telemetry-services) and don't indicate a problem with your setup.
+If nothing arrives, start Claude Code with `claude --debug-file <path>` and check the log it writes to that path. Claude Code reports failures from the exporters you configure as `[3P telemetry]` errors, where 3P means third-party. Lines prefixed `[Anthropic telemetry]` describe [Anthropic's separate operational telemetry](/docs/en/data-usage#telemetry-services) and don't indicate a problem with your setup.
 
 For full configuration options, see the [OpenTelemetry specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#configuration-options).
 
@@ -60,11 +60,15 @@ Example managed settings configuration:
 }
 ```
 
+In the Claude Desktop app, Code tab sessions read these managed settings from the sources that [reach each kind of Desktop session](/docs/en/desktop#managed-settings). The OpenTelemetry form for Cowork under **Monitoring** in the admin console's [Data and privacy settings](https://claude.ai/admin-settings/data-privacy-controls) applies to Cowork sessions only, so neither the terminal CLI nor the Code tab exports to a collector you set there.
+
+Claude Code ignores the [OpenTelemetry exporter variables](/docs/en/settings-reference#variables-claude-code-ignores-in-env) in a repository's `.claude/settings.json` and `.claude/settings.local.json`, so a repository can't use them to turn telemetry on, choose where it goes, or capture content. Set them in managed settings, or have each developer set them in their shell or `~/.claude/settings.json`. A repository can still turn a signal off by setting its exporter selector, such as `OTEL_LOGS_EXPORTER`, to `none`, unless managed settings, a `--settings` file, or the environment you start Claude Code from sets that variable.
+
 Claude Code doesn't pass `OTEL_*` environment variables to the subprocesses it spawns, including the Bash tool, hooks, MCP servers, and language servers. An OpenTelemetry-instrumented application that you run through the Bash tool doesn't inherit Claude Code's exporter endpoint or headers, so set those variables directly in the command if that application needs to export its own telemetry.
 
 ### How managed settings lock the OTLP destination
 
-When you set an `OTEL_EXPORTER_OTLP_*` variable in managed settings, Claude Code removes conflicting developer-set variables at startup and logs a warning you can see with `claude --debug`. What it removes depends on which variable you set:
+When you set an `OTEL_EXPORTER_OTLP_*` variable in managed settings, Claude Code removes conflicting developer-set variables at startup and logs a warning in the debug log. What it removes depends on which variable you set:
 
 * **Endpoints**: when you set `OTEL_EXPORTER_OTLP_ENDPOINT`, Claude Code removes every developer-set per-signal endpoint. Developers can't point one signal at a different collector, so you don't need to also set the per-signal endpoint variables in managed settings.
 * **Protocols**: when you set `OTEL_EXPORTER_OTLP_PROTOCOL`, Claude Code removes every developer-set per-signal protocol.
@@ -91,33 +95,37 @@ When the desktop app or a [self-hosted environment](/docs/en/self-hosted-environ
 
 ### Common configuration variables
 
-These variables configure exporters, endpoints, and export behavior for all deployments. If you set a per-signal endpoint or protocol variable, such as `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, Claude Code uses it instead of the generic variable for that signal. If you set a per-signal headers variable, such as `OTEL_EXPORTER_OTLP_METRICS_HEADERS`, Claude Code merges it with the generic `OTEL_EXPORTER_OTLP_HEADERS` for that signal. On machines with managed settings, see [How managed settings lock the OTLP destination](#how-managed-settings-lock-the-otlp-destination) for what Claude Code removes.
+These variables configure exporters, endpoints, and export behavior for all deployments.
 
-| Environment Variable                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Example Values                                                                                                                                                 |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLAUDE_CODE_ENABLE_TELEMETRY`                      | Enables telemetry collection (required)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `1`                                                                                                                                                            |
-| `OTEL_METRICS_EXPORTER`                             | Metrics exporter types, comma-separated. Use `none` to disable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `console`, `otlp`, `prometheus`, `none`                                                                                                                        |
-| `OTEL_LOGS_EXPORTER`                                | Logs/events exporter types, comma-separated. Use `none` to disable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `console`, `otlp`, `none`                                                                                                                                      |
-| `OTEL_EXPORTER_OTLP_PROTOCOL`                       | Protocol for OTLP exporter, applies to all signals. Claude Code has no default protocol, so set this or the signal-specific protocol variable for each `otlp` exporter you enable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `grpc`, `http/json`, `http/protobuf`                                                                                                                           |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`                       | OTLP collector endpoint for all signals                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `http://localhost:4317`                                                                                                                                        |
-| `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL`               | Protocol for metrics, overrides general setting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `grpc`, `http/json`, `http/protobuf`                                                                                                                           |
-| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`               | OTLP metrics endpoint, overrides general setting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `http://localhost:4318/v1/metrics`                                                                                                                             |
-| `OTEL_EXPORTER_OTLP_LOGS_PROTOCOL`                  | Protocol for logs, overrides general setting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `grpc`, `http/json`, `http/protobuf`                                                                                                                           |
-| `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`                  | OTLP logs endpoint, overrides general setting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `http://localhost:4318/v1/logs`                                                                                                                                |
-| `OTEL_EXPORTER_OTLP_HEADERS`                        | Authentication headers for OTLP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `Authorization=Bearer token`                                                                                                                                   |
-| `OTEL_EXPORTER_OTLP_METRICS_HEADERS`                | Authentication headers for metrics, merged with the general headers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `Authorization=Bearer token`                                                                                                                                   |
-| `OTEL_EXPORTER_OTLP_LOGS_HEADERS`                   | Authentication headers for logs, merged with the general headers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Authorization=Bearer token`                                                                                                                                   |
-| `OTEL_METRIC_EXPORT_INTERVAL`                       | Export interval in milliseconds (default: 60000)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `5000`, `60000`                                                                                                                                                |
-| `OTEL_LOGS_EXPORT_INTERVAL`                         | Logs export interval in milliseconds (default: 5000)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `1000`, `10000`                                                                                                                                                |
-| `OTEL_LOG_USER_PROMPTS`                             | Enable logging of user prompt content (default: disabled)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `1` to enable                                                                                                                                                  |
-| `OTEL_LOG_ASSISTANT_RESPONSES`                      | Enable logging of assistant response text on `assistant_response` events (default: disabled). When unset, falls back to the value of `OTEL_LOG_USER_PROMPTS`. Requires Claude Code v2.1.193 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `1` to enable, `0` to keep redacted                                                                                                                            |
-| `OTEL_LOG_TOOL_DETAILS`                             | Enable logging of tool parameters and input arguments in tool events and trace span attributes: Bash commands, MCP server and tool names, skill names, user-authored workflow names, and tool input. Also enables custom, plugin, and MCP command names on `user_prompt` events (default: disabled). For Claude Desktop's built-in servers, in sessions Claude Desktop owns, `mcp_server_name`/`mcp_tool_name` emit on `tool_decision`/`tool_result` even with the flag off. The exception requires Claude Code v2.1.214 or later                                                                                                                                                | `1` to enable                                                                                                                                                  |
-| `OTEL_LOG_TOOL_CONTENT`                             | Enable logging of tool content in the [`tool.output` span event](#tool-output-span-event) (default: disabled). Span attributes carry tool content under [their own gates](#new-context-gates). Requires [tracing](#traces-beta). Content is truncated at the content limit (60 KB by default)                                                                                                                                                                                                                                                                                                                                                                                    | `1` to enable                                                                                                                                                  |
-| `OTEL_LOG_MANAGED_SETTINGS`                         | Add the redacted managed settings, and a SHA-256 digest of the settings before redaction, to [managed settings resolved](#managed-settings-resolved-event) events (default: disabled). A value in project or local settings doesn't turn it on. Requires Claude Code v2.1.274 or later                                                                                                                                                                                                                                                                                                                                                                                           | `1` to enable                                                                                                                                                  |
-| `OTEL_LOG_RAW_API_BODIES`                           | Emit the full Anthropic Messages API request and response JSON as `api_request_body` / `api_response_body` log events (default: disabled). Bodies include the entire conversation history. Enabling this implies consent to everything `OTEL_LOG_USER_PROMPTS`, `OTEL_LOG_TOOL_DETAILS`, and `OTEL_LOG_TOOL_CONTENT` would reveal                                                                                                                                                                                                                                                                                                                                                | `1` for inline bodies truncated at the content limit (60 KB by default), or `file:<dir>` for untruncated bodies on disk with a `body_ref` pointer in the event |
-| `CLAUDE_CODE_OTEL_CONTENT_MAX_LENGTH`               | Content limit: the maximum length of content-bearing attributes such as model responses, tool content, system prompts, and raw API bodies, truncation marker included, in UTF-16 code units (default: 61440, i.e. 60 KB). The default is sized for backends that cap attribute values at 64 KB; raise it only if your backend accepts larger values, or lower it to cut telemetry volume. When an OpenTelemetry SDK attribute limit, `OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT` or one of its logrecord and span variants, is set lower, Claude Code truncates at that smaller value so the `[TRUNCATED ...]` marker stays within the SDK limit. Requires Claude Code v2.1.214 or later | `262144`                                                                                                                                                       |
-| `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | Metrics temporality preference (default: `delta`). Set to `cumulative` if your backend expects cumulative temporality                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `delta`, `cumulative`                                                                                                                                          |
-| `CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS`       | Interval for refreshing dynamic headers (default: 1740000ms / 29 minutes)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `900000`                                                                                                                                                       |
+If you set a per-signal endpoint or protocol variable, such as `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, Claude Code uses it instead of the generic variable for that signal. If you set a per-signal headers variable, such as `OTEL_EXPORTER_OTLP_METRICS_HEADERS`, Claude Code merges it with the generic `OTEL_EXPORTER_OTLP_HEADERS` for that signal.
+
+On machines with managed settings, see [How managed settings lock the OTLP destination](#how-managed-settings-lock-the-otlp-destination) for what Claude Code removes.
+
+| Environment Variable | Description | Example Values |
+| - | - | - |
+| `CLAUDE_CODE_ENABLE_TELEMETRY` | Enables telemetry collection (required) | `1` |
+| `OTEL_METRICS_EXPORTER` | Metrics exporter types, comma-separated. Use `none` to disable | `console`, `otlp`, `prometheus`, `none` |
+| `OTEL_LOGS_EXPORTER` | Logs/events exporter types, comma-separated. Use `none` to disable | `console`, `otlp`, `none` |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | Protocol for OTLP exporter, applies to all signals. Claude Code has no default protocol, so set this or the signal-specific protocol variable for each `otlp` exporter you enable | `grpc`, `http/json`, `http/protobuf` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint for all signals | `http://localhost:4317` |
+| `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL` | Protocol for metrics, overrides general setting | `grpc`, `http/json`, `http/protobuf` |
+| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | OTLP metrics endpoint, overrides general setting | `http://localhost:4318/v1/metrics` |
+| `OTEL_EXPORTER_OTLP_LOGS_PROTOCOL` | Protocol for logs, overrides general setting | `grpc`, `http/json`, `http/protobuf` |
+| `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` | OTLP logs endpoint, overrides general setting | `http://localhost:4318/v1/logs` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Authentication headers for OTLP | `Authorization=Bearer token` |
+| `OTEL_EXPORTER_OTLP_METRICS_HEADERS` | Authentication headers for metrics, merged with the general headers | `Authorization=Bearer token` |
+| `OTEL_EXPORTER_OTLP_LOGS_HEADERS` | Authentication headers for logs, merged with the general headers | `Authorization=Bearer token` |
+| `OTEL_METRIC_EXPORT_INTERVAL` | Export interval in milliseconds (default: 60000) | `5000`, `60000` |
+| `OTEL_LOGS_EXPORT_INTERVAL` | Logs export interval in milliseconds (default: 5000) | `1000`, `10000` |
+| `OTEL_LOG_USER_PROMPTS` | Enable logging of user prompt content (default: disabled) | `1` to enable |
+| `OTEL_LOG_ASSISTANT_RESPONSES` | Enable logging of assistant response text on `assistant_response` events (default: disabled). When unset, falls back to the value of `OTEL_LOG_USER_PROMPTS`. Requires Claude Code v2.1.193 or later | `1` to enable, `0` to keep redacted |
+| `OTEL_LOG_TOOL_DETAILS` | Enable logging of tool parameters and input arguments in tool events and trace span attributes: Bash commands, MCP server and tool names, skill names, user-authored workflow names, and tool input. Also enables custom, plugin, and MCP command names on `user_prompt` events, and real agent, skill, plugin, and MCP server and tool names on the [cost and token counters](#cost-counter) (default: disabled). For Claude Desktop's built-in servers, in sessions Claude Desktop owns, `mcp_server_name`/`mcp_tool_name` emit on `tool_decision`/`tool_result` even with the flag off. The exception requires Claude Code v2.1.214 or later | `1` to enable |
+| `OTEL_LOG_TOOL_CONTENT` | Enable logging of tool content in the [`tool.output` span event](#tool-output-span-event) (default: disabled). Span attributes carry tool content under [their own gates](#new-context-gates). Requires [tracing](#traces-beta). Content is truncated at the content limit (60 KB by default) | `1` to enable |
+| `OTEL_LOG_MANAGED_SETTINGS` | Add the redacted managed settings, and a SHA-256 digest of the settings before redaction, to [managed settings resolved](#managed-settings-resolved-event) events (default: disabled). A value in project or local settings doesn't turn it on. Requires Claude Code v2.1.274 or later | `1` to enable |
+| `OTEL_LOG_RAW_API_BODIES` | Emit the full Anthropic Messages API request and response JSON as `api_request_body` / `api_response_body` log events (default: disabled). Bodies include the entire conversation history. Enabling this implies consent to everything `OTEL_LOG_USER_PROMPTS`, `OTEL_LOG_TOOL_DETAILS`, and `OTEL_LOG_TOOL_CONTENT` would reveal | `1` for inline bodies truncated at the content limit (60 KB by default), or `file:<dir>` for untruncated bodies on disk with a `body_ref` pointer in the event |
+| `CLAUDE_CODE_OTEL_CONTENT_MAX_LENGTH` | Content limit: the maximum length of content-bearing attributes such as model responses, tool content, system prompts, and raw API bodies, truncation marker included, in UTF-16 code units (default: 61440, i.e. 60 KB). The default is sized for backends that cap attribute values at 64 KB; raise it only if your backend accepts larger values, or lower it to cut telemetry volume. When an OpenTelemetry SDK attribute limit, `OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT` or one of its logrecord and span variants, is set lower, Claude Code truncates at that smaller value so the `[TRUNCATED ...]` marker stays within the SDK limit. Requires Claude Code v2.1.214 or later | `262144` |
+| `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | Metrics temporality preference (default: `delta`). Set to `cumulative` if your backend expects cumulative temporality | `delta`, `cumulative` |
+| `CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS` | Interval for refreshing dynamic headers (default: 1740000ms / 29 minutes) | `900000` |
 
 For the `http/protobuf` and `http/json` protocols, Claude Code sends each export request with a `Content-Length` header. Before v2.1.212, Claude Code versions from v2.1.191 onward sent these requests with chunked transfer encoding; Azure Monitor and other endpoints that require a declared length rejected them with `411 Length Required` or `400` errors.
 
@@ -125,10 +133,10 @@ For the `http/protobuf` and `http/json` protocols, Claude Code sends each export
 
 How you configure client certificates for the OTLP exporter depends on the OTLP protocol in use for that signal, set via `OTEL_EXPORTER_OTLP_PROTOCOL` or the per-signal override. The same configuration applies to metrics, logs, and traces.
 
-| Protocol                     | Client certificate variables                                                                                                                                                                      | Trust the collector's CA with    |
-| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------- |
-| `http/protobuf`, `http/json` | `CLAUDE_CODE_CLIENT_CERT`, `CLAUDE_CODE_CLIENT_KEY`, and optionally `CLAUDE_CODE_CLIENT_KEY_PASSPHRASE`. See [Network configuration](/docs/en/network-config#mtls-authentication)                      | `NODE_EXTRA_CA_CERTS`            |
-| `grpc`                       | `OTEL_EXPORTER_OTLP_CLIENT_KEY` and `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE`, or the per-signal variants such as `OTEL_EXPORTER_OTLP_METRICS_CLIENT_KEY` to use a different certificate per signal | `OTEL_EXPORTER_OTLP_CERTIFICATE` |
+| Protocol | Client certificate variables | Trust the collector's CA with |
+| :- | :- | :- |
+| `http/protobuf`, `http/json` | `CLAUDE_CODE_CLIENT_CERT`, `CLAUDE_CODE_CLIENT_KEY`, and optionally `CLAUDE_CODE_CLIENT_KEY_PASSPHRASE`. See [Network configuration](/docs/en/network-config#mtls-authentication) | `NODE_EXTRA_CA_CERTS` |
+| `grpc` | `OTEL_EXPORTER_OTLP_CLIENT_KEY` and `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE`, or the per-signal variants such as `OTEL_EXPORTER_OTLP_METRICS_CLIENT_KEY` to use a different certificate per signal | `OTEL_EXPORTER_OTLP_CERTIFICATE` |
 
 For `grpc`, the OpenTelemetry SDK reads the standard OTLP variables directly, so existing configurations that set the per-signal metrics variables continue to work. On machines with managed settings, Claude Code [may remove developer-set per-signal credentials and endpoints](#how-managed-settings-lock-the-otlp-destination) at startup.
 
@@ -136,14 +144,14 @@ For `grpc`, the OpenTelemetry SDK reads the standard OTLP variables directly, so
 
 The following environment variables control which attributes are included in metrics to manage cardinality:
 
-| Environment Variable                       | Description                                                                                                                            | Default Value | Example to Disable |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------ |
-| `OTEL_METRICS_INCLUDE_SESSION_ID`          | Include session.id attribute in metrics                                                                                                | `true`        | `false`            |
-| `OTEL_METRICS_INCLUDE_VERSION`             | Include app.version attribute in metrics                                                                                               | `false`       | `true`             |
-| `OTEL_METRICS_INCLUDE_ACCOUNT_UUID`        | Include user.account\_uuid and user.account\_id attributes in metrics                                                                  | `true`        | `false`            |
-| `OTEL_METRICS_INCLUDE_ENTRYPOINT`          | Include app.entrypoint attribute in metrics                                                                                            | `false`       | `true`             |
-| `OTEL_METRICS_INCLUDE_RESOURCE_ATTRIBUTES` | Include keys from `OTEL_RESOURCE_ATTRIBUTES` as attributes on metric datapoints                                                        | `true`        | `false`            |
-| `OTEL_METRICS_INCLUDE_REPOSITORY`          | Include `vcs.*` [repository identity attributes](#repository-attributes) on metrics and events. Requires Claude Code v2.1.269 or later | `false`       | `true`             |
+| Environment Variable | Description | Default Value | Example to Disable |
+| - | - | - | - |
+| `OTEL_METRICS_INCLUDE_SESSION_ID` | Include session.id and, on cloud sessions, ccr.session.id attributes in metrics | `true` | `false` |
+| `OTEL_METRICS_INCLUDE_VERSION` | Include app.version attribute in metrics | `false` | `true` |
+| `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` | Include user.account\_uuid and user.account\_id attributes in metrics | `true` | `false` |
+| `OTEL_METRICS_INCLUDE_ENTRYPOINT` | Include app.entrypoint attribute in metrics | `false` | `true` |
+| `OTEL_METRICS_INCLUDE_RESOURCE_ATTRIBUTES` | Include keys from `OTEL_RESOURCE_ATTRIBUTES` as attributes on metric datapoints | `true` | `false` |
+| `OTEL_METRICS_INCLUDE_REPOSITORY` | Include `vcs.*` [repository identity attributes](#repository-attributes) on metrics and events. Requires Claude Code v2.1.269 or later | `false` | `true` |
 
 Lower cardinality generally means better performance and lower storage costs but less granular data for analysis.
 
@@ -153,14 +161,14 @@ Distributed tracing exports spans that link each user prompt to the API requests
 
 Tracing is off by default. To enable it, set both `CLAUDE_CODE_ENABLE_TELEMETRY=1` and `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1`, then set `OTEL_TRACES_EXPORTER` to choose where spans are sent. Traces reuse the [common OTLP configuration](#common-configuration-variables) for endpoint, protocol, headers, and [mTLS](#mtls-authentication). On machines with managed settings, Claude Code [may remove developer-set per-signal credentials and endpoints](#how-managed-settings-lock-the-otlp-destination) at startup.
 
-| Environment Variable                  | Description                                                                       | Example Values                       |
-| ------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------ |
-| `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA` | Enable span tracing (required). `ENABLE_ENHANCED_TELEMETRY_BETA` is also accepted | `1`                                  |
-| `OTEL_TRACES_EXPORTER`                | Traces exporter types, comma-separated. Use `none` to disable                     | `console`, `otlp`, `none`            |
-| `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL`  | Protocol for traces, overrides `OTEL_EXPORTER_OTLP_PROTOCOL`                      | `grpc`, `http/json`, `http/protobuf` |
-| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`  | OTLP traces endpoint, overrides `OTEL_EXPORTER_OTLP_ENDPOINT`                     | `http://localhost:4318/v1/traces`    |
-| `OTEL_EXPORTER_OTLP_TRACES_HEADERS`   | Authentication headers for traces, merged with `OTEL_EXPORTER_OTLP_HEADERS`       | `Authorization=Bearer token`         |
-| `OTEL_TRACES_EXPORT_INTERVAL`         | Span batch export interval in milliseconds (default: 5000)                        | `1000`, `10000`                      |
+| Environment Variable | Description | Example Values |
+| - | - | - |
+| `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA` | Enable span tracing (required). `ENABLE_ENHANCED_TELEMETRY_BETA` is also accepted | `1` |
+| `OTEL_TRACES_EXPORTER` | Traces exporter types, comma-separated. Use `none` to disable | `console`, `otlp`, `none` |
+| `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL` | Protocol for traces, overrides `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc`, `http/json`, `http/protobuf` |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | OTLP traces endpoint, overrides `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318/v1/traces` |
+| `OTEL_EXPORTER_OTLP_TRACES_HEADERS` | Authentication headers for traces, merged with `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=Bearer token` |
+| `OTEL_TRACES_EXPORT_INTERVAL` | Span batch export interval in milliseconds (default: 5000) | `1000`, `10000` |
 
 Spans redact user prompt text, tool input details, and tool content by default. Set `OTEL_LOG_USER_PROMPTS=1`, `OTEL_LOG_TOOL_DETAILS=1`, and `OTEL_LOG_TOOL_CONTENT=1` to include them.
 
@@ -200,112 +208,115 @@ Every span carries the [standard attributes](#standard-attributes) plus a `span.
 
 **`claude_code.interaction`**
 
-| Attribute                 | Description                                                                                                                                                            | Gated by                |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `user_prompt`             | Prompt text. Value is `<REDACTED>` unless the gate is set                                                                                                              | `OTEL_LOG_USER_PROMPTS` |
-| `user_prompt_length`      | Prompt length in characters                                                                                                                                            |                         |
-| `interaction.sequence`    | 1-based counter of interactions, counted per Claude Code process rather than per session, as described for [`event.sequence`](#event-correlation-attributes)           |                         |
-| `parent.source`           | How the span got its trace parent: `env` when it parented under an inbound `TRACEPARENT`, `none` when it started its own trace. Requires Claude Code v2.1.268 or later |                         |
-| `interaction.duration_ms` | Wall-clock duration of the turn                                                                                                                                        |                         |
+| Attribute | Description | Gated by |
+| - | - | - |
+| `user_prompt` | Prompt text. Value is `<REDACTED>` unless the gate is set | `OTEL_LOG_USER_PROMPTS` |
+| `user_prompt_length` | Prompt length in characters | |
+| `interaction.sequence` | 1-based counter of interactions, counted per Claude Code process rather than per session, as described for [`event.sequence`](#event-correlation-attributes) | |
+| `parent.source` | How the span got its trace parent: `env` when it parented under an inbound `TRACEPARENT`, `none` when it started its own trace. Requires Claude Code v2.1.268 or later | |
+| `interaction.duration_ms` | Wall-clock duration of the turn | |
 
 **`claude_code.llm_request`**
 
-| Attribute                        | Description                                                                                                                                                                                                                                                               | Gated by                       |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `model`                          | Model identifier                                                                                                                                                                                                                                                          |                                |
-| `gen_ai.system`                  | Always `anthropic`. OpenTelemetry GenAI semantic convention                                                                                                                                                                                                               |                                |
-| `gen_ai.request.model`           | Same value as `model`. OpenTelemetry GenAI semantic convention                                                                                                                                                                                                            |                                |
-| `query_source`                   | Subsystem that issued the request, such as `repl_main_thread` or a subagent name                                                                                                                                                                                          | `ENABLE_BETA_TRACING_DETAILED` |
-| `query_source_safe`              | Bounded form of `query_source`, emitted whether or not detailed beta tracing is active, with values such as `repl_main_thread` or `agent.builtin.general-purpose`. `:` becomes `.` and user-named agents appear as `agent.custom`. Requires Claude Code v2.1.268 or later |                                |
-| `agent_id`                       | Identifier of the subagent or teammate that issued the request. Absent on the main session                                                                                                                                                                                |                                |
-| `parent_agent_id`                | Identifier of the agent that spawned this one. Absent for the main session and for agents spawned directly from it                                                                                                                                                        |                                |
-| `workflow.run_id`                | Run identifier of the [Workflow](/docs/en/workflows) tool run that spawned this agent, prefixed `wf_`. Absent for agents not spawned by a workflow                                                                                                                             |                                |
-| `workflow.name`                  | Name of the workflow that spawned this agent. User-authored names are replaced with `custom` unless the gate is set                                                                                                                                                       | `OTEL_LOG_TOOL_DETAILS`        |
-| `speed`                          | `fast` or `normal`                                                                                                                                                                                                                                                        |                                |
-| `effort`                         | [Effort level](/docs/en/model-config#adjust-effort-level) applied to the request: `low`, `medium`, `high`, `xhigh`, or `max`. Absent when Claude Code sends no effort level, for example on a model that doesn't support effort. Requires Claude Code v2.1.274 or later        |                                |
-| `llm_request.context`            | `interaction`, `tool`, or `standalone` depending on the parent span                                                                                                                                                                                                       |                                |
-| `duration_ms`                    | Wall-clock duration including retries                                                                                                                                                                                                                                     |                                |
-| `ttft_ms`                        | Time to first token in milliseconds                                                                                                                                                                                                                                       |                                |
-| `first_content_ms`               | Time from request start to the first content block of the successful attempt, in milliseconds. Absent on requests that fell back to the non-streaming path. Requires Claude Code v2.1.268 or later                                                                        |                                |
-| `input_tokens`                   | Input token count from the API usage block                                                                                                                                                                                                                                |                                |
-| `output_tokens`                  | Output token count                                                                                                                                                                                                                                                        |                                |
-| `cache_read_tokens`              | Tokens read from prompt cache                                                                                                                                                                                                                                             |                                |
-| `cache_creation_tokens`          | Tokens written to prompt cache                                                                                                                                                                                                                                            |                                |
-| `request_id`                     | Anthropic API request ID from the `request-id` response header                                                                                                                                                                                                            |                                |
-| `gen_ai.response.id`             | Same value as `request_id`. OpenTelemetry GenAI semantic convention                                                                                                                                                                                                       |                                |
-| `client_request_id`              | Client-generated `x-client-request-id` of the final attempt                                                                                                                                                                                                               |                                |
-| `attempt`                        | Total attempts made for this request                                                                                                                                                                                                                                      |                                |
-| `success`                        | `true` or `false`                                                                                                                                                                                                                                                         |                                |
-| `status_code`                    | HTTP status code when the request failed                                                                                                                                                                                                                                  |                                |
-| `error`                          | Error message when the request failed                                                                                                                                                                                                                                     |                                |
-| `error_class`                    | Short error class token when the request failed, such as `api_timeout` or `server_overload`. Requires Claude Code v2.1.268 or later                                                                                                                                       |                                |
-| `response.has_tool_call`         | `true` when the response contained tool-use blocks                                                                                                                                                                                                                        |                                |
-| `stop_reason`                    | API response `stop_reason`, such as `end_turn`, `tool_use`, `max_tokens`, `stop_sequence`, `pause_turn`, or `refusal`                                                                                                                                                     |                                |
-| `gen_ai.response.finish_reasons` | Same value as `stop_reason`, wrapped in a string array. OpenTelemetry GenAI semantic convention                                                                                                                                                                           |                                |
+| Attribute | Description | Gated by |
+| - | - | - |
+| `model` | Model identifier | |
+| `gen_ai.system` | Always `anthropic`. OpenTelemetry GenAI semantic convention | |
+| `gen_ai.request.model` | Same value as `model`. OpenTelemetry GenAI semantic convention | |
+| `query_source` | Subsystem that issued the request, such as `repl_main_thread` or a subagent name | `ENABLE_BETA_TRACING_DETAILED` |
+| `query_source_safe` | Bounded form of `query_source`, emitted whether or not detailed beta tracing is active, with values such as `repl_main_thread` or `agent.builtin.general-purpose`. `:` becomes `.` and user-named agents appear as `agent.custom`. Requires Claude Code v2.1.268 or later | |
+| `agent_id` | Identifier of the subagent or teammate that issued the request. Absent on the main session | |
+| `parent_agent_id` | Identifier of the agent that spawned this one. Absent for the main session and for agents spawned directly from it | |
+| `workflow.run_id` | Run identifier of the [Workflow](/docs/en/workflows) tool run that spawned this agent, prefixed `wf_`. Absent for agents not spawned by a workflow | |
+| `workflow.name` | Name of the workflow that spawned this agent. User-authored names are replaced with `custom` unless the gate is set | `OTEL_LOG_TOOL_DETAILS` |
+| `speed` | `fast` or `normal` | |
+| `effort` | [Effort level](/docs/en/model-config#adjust-effort-level) applied to the request: `low`, `medium`, `high`, `xhigh`, or `max`. Absent when Claude Code sends no effort level, for example on a model that doesn't support effort. Requires Claude Code v2.1.274 or later | |
+| `llm_request.context` | `interaction`, `tool`, or `standalone` depending on the parent span | |
+| `duration_ms` | Wall-clock duration including retries | |
+| `ttft_ms` | Time to first token in milliseconds | |
+| `first_content_ms` | Time from request start to the first content block of the successful attempt, in milliseconds. Absent on requests that fell back to the non-streaming path. Requires Claude Code v2.1.268 or later | |
+| `input_tokens` | Input token count from the API usage block | |
+| `output_tokens` | Output token count | |
+| `cache_read_tokens` | Tokens read from prompt cache | |
+| `cache_creation_tokens` | Tokens written to prompt cache | |
+| `request_id` | API request ID. Same value as the `request_id` [event correlation attribute](#event-correlation-attributes) | |
+| `gen_ai.response.id` | Same value as `request_id`. OpenTelemetry GenAI semantic convention | |
+| `client_request_id` | Client-generated `x-client-request-id` of the final attempt | |
+| `attempt` | Total attempts made for this request | |
+| `success` | `true` or `false` | |
+| `status_code` | HTTP status code when the request failed | |
+| `error` | Error message when the request failed | |
+| `error_class` | Short error class token when the request failed, such as `api_timeout` or `server_overload`. Requires Claude Code v2.1.268 or later | |
+| `response.has_tool_call` | `true` when the response contained tool-use blocks | |
+| `stop_reason` | API response `stop_reason`, such as `end_turn`, `tool_use`, `max_tokens`, `stop_sequence`, `pause_turn`, or `refusal` | |
+| `gen_ai.response.finish_reasons` | Same value as `stop_reason`, wrapped in a string array. OpenTelemetry GenAI semantic convention | |
 
 Each retry attempt is also recorded as a `gen_ai.request.attempt` span event with `attempt` and `client_request_id` attributes.
 
 **`claude_code.tool`**
 
-| Attribute             | Description                                                                                                                                                                                                                                                                              | Gated by                |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `tool_name`           | Tool name                                                                                                                                                                                                                                                                                |                         |
-| `tool_name_safe`      | Form of `tool_name` that carries no user-chosen names. Built-in tool names pass verbatim. MCP tool names appear as `mcp_other`, except tool names matching a few fixed shapes, such as `playwright` tools named `browser_*`, which pass verbatim. Requires Claude Code v2.1.268 or later |                         |
-| `bash_command_class`  | For the Bash tool: category of the command's first program from a fixed list, such as `vcs` or `package_manager`. `other` for a program outside the list, `unparsed` when the line can't be parsed. Requires Claude Code v2.1.268 or later                                               |                         |
-| `bash_argv0`          | For the Bash tool: the command's first program when it's on the same fixed list, such as `git` or `npm`. `other` for any program outside the list. Requires Claude Code v2.1.268 or later                                                                                                |                         |
-| `duration_ms`         | Wall-clock duration including permission wait and execution                                                                                                                                                                                                                              |                         |
-| `result_tokens`       | Approximate token size of the tool result                                                                                                                                                                                                                                                |                         |
-| `agent_id`            | Identifier of the subagent or teammate that ran the tool. Absent on the main session                                                                                                                                                                                                     |                         |
-| `parent_agent_id`     | Identifier of the agent that spawned this one. Absent for the main session and for agents spawned directly from it                                                                                                                                                                       |                         |
-| `workflow.run_id`     | Run identifier of the Workflow tool run that spawned this agent, prefixed `wf_`. Absent for agents not spawned by a workflow                                                                                                                                                             |                         |
-| `workflow.name`       | Name of the workflow that spawned this agent. User-authored names are replaced with `custom` unless the gate is set                                                                                                                                                                      | `OTEL_LOG_TOOL_DETAILS` |
-| `tool_use_id`         | The model's `tool_use` block id for this call. Matches the `tool_use_id` on the [tool\_result](#tool-result-event) and [tool\_decision](#tool-decision-event) events and in hook payloads, so you can join the span to those records                                                     |                         |
-| `gen_ai.tool.call.id` | Same value as `tool_use_id`. OpenTelemetry GenAI semantic convention                                                                                                                                                                                                                     |                         |
-| `file_path`           | Target file path for Read, Edit, and Write tools                                                                                                                                                                                                                                         | `OTEL_LOG_TOOL_DETAILS` |
-| `full_command`        | Command string for the Bash tool                                                                                                                                                                                                                                                         | `OTEL_LOG_TOOL_DETAILS` |
-| `skill_name`          | Skill name for the Skill tool                                                                                                                                                                                                                                                            | `OTEL_LOG_TOOL_DETAILS` |
-| `subagent_type`       | Subagent type for the Agent tool or legacy Task tool                                                                                                                                                                                                                                     | `OTEL_LOG_TOOL_DETAILS` |
+| Attribute | Description | Gated by |
+| - | - | - |
+| `tool_name` | Tool name | |
+| `tool_name_safe` | Form of `tool_name` that carries no user-chosen names. Built-in tool names pass verbatim. MCP tool names appear as `mcp_other`, except tool names matching a few fixed shapes, such as `playwright` tools named `browser_*`, which pass verbatim. Requires Claude Code v2.1.268 or later | |
+| `bash_command_class` | For the Bash tool: category of the command's first program from a fixed list, such as `vcs` or `package_manager`. `other` for a program outside the list, `unparsed` when the line can't be parsed. Requires Claude Code v2.1.268 or later | |
+| `bash_argv0` | For the Bash tool: the command's first program when it's on the same fixed list, such as `git` or `npm`. `other` for any program outside the list. Requires Claude Code v2.1.268 or later | |
+| `duration_ms` | Wall-clock duration including permission wait and execution | |
+| `result_tokens` | Approximate token size of the tool result | |
+| `agent_id` | Identifier of the subagent or teammate that ran the tool. Absent on the main session | |
+| `parent_agent_id` | Identifier of the agent that spawned this one. Absent for the main session and for agents spawned directly from it | |
+| `workflow.run_id` | Run identifier of the Workflow tool run that spawned this agent, prefixed `wf_`. Absent for agents not spawned by a workflow | |
+| `workflow.name` | Name of the workflow that spawned this agent. User-authored names are replaced with `custom` unless the gate is set | `OTEL_LOG_TOOL_DETAILS` |
+| `tool_use_id` | The model's `tool_use` block id for this call. Matches the `tool_use_id` on the [tool\_result](#tool-result-event) and [tool\_decision](#tool-decision-event) events and in hook payloads, so you can join the span to those records | |
+| `gen_ai.tool.call.id` | Same value as `tool_use_id`. OpenTelemetry GenAI semantic convention | |
+| `file_path` | Target file path for Read, Edit, and Write tools | `OTEL_LOG_TOOL_DETAILS` |
+| `full_command` | Command string for the Bash tool | `OTEL_LOG_TOOL_DETAILS` |
+| `skill_name` | Skill name for the Skill tool | `OTEL_LOG_TOOL_DETAILS` |
+| `subagent_type` | Subagent type for the Agent tool or legacy Task tool | `OTEL_LOG_TOOL_DETAILS` |
 
 <span id="tool-output-span-event" />**`tool.output` span event on `claude_code.tool`**
 
 If you set `OTEL_LOG_TOOL_CONTENT=1`, Read and Bash calls can record a `tool.output` span event on the `claude_code.tool` span. Edit and Write calls record one only when you also set `OTEL_LOG_TOOL_DETAILS=1`. That variable isn't scoped to those two tools, so check its [row in the configuration table](#common-configuration-variables) for the arguments it adds elsewhere.
 
+MCP tools, WebFetch, and WebSearch record this event too, on Claude Code v2.1.283 or later.
+
 Claude Code writes this event from a tool call's successful return, so a call that raises an error records nothing, whatever the tool. Among the calls that do return, it records no `tool.output` event for:
 
-* A call to any tool other than Read, Edit, Write, and Bash, including MCP tools and WebFetch
+* A call to any tool other than Read, Edit, Write, Bash, WebFetch, WebSearch, and MCP tools
 * A Read that returns anything other than file text, such as an image, a PDF, or a re-read of a file whose contents haven't changed
 * An Edit or Write call, unless you also set `OTEL_LOG_TOOL_DETAILS=1`
+* A WebFetch or WebSearch call that Claude Code moved to the background because you interrupted the turn to [send your queued messages right away](/docs/en/interactive-mode#when-claude-code-sends-what-you-queued) while the call ran. Claude receives that result later, after the tool span has ended
 
 The event carries these attributes, each truncated at the content limit (60 KB by default). `Gated by` names the variable an attribute needs on top of `OTEL_LOG_TOOL_CONTENT=1`, and for Edit and Write that variable gates the event itself rather than the attribute.
 
-| Attribute      | Description                                                                                         | Gated by                                   |
-| -------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `content`      | Text the Read tool returned, or the text a Write call was asked to write                            | `OTEL_LOG_TOOL_DETAILS` for the Write tool |
-| `output`       | Combined output of a Bash command, with stderr interleaved into stdout                              |                                            |
-| `diff`         | Structured patch the Edit tool applied                                                              | `OTEL_LOG_TOOL_DETAILS`                    |
-| `file_path`    | Target file path for the Read, Edit, and Write tools, repeating the span attribute of the same name | `OTEL_LOG_TOOL_DETAILS`                    |
-| `bash_command` | Command string for the Bash tool                                                                    | `OTEL_LOG_TOOL_DETAILS`                    |
+| Attribute | Description | Gated by |
+| - | - | - |
+| `content` | Text the Read tool returned, or the text a Write call was asked to write | `OTEL_LOG_TOOL_DETAILS` for the Write tool |
+| `output` | For the Bash tool, the command's combined output, with stderr interleaved into stdout. For an MCP tool, WebFetch, or WebSearch, the result the tool returned: text blocks joined by newlines, with an image or document replaced by a placeholder such as `[image]` | |
+| `diff` | Structured patch the Edit tool applied | `OTEL_LOG_TOOL_DETAILS` |
+| `file_path` | Target file path for the Read, Edit, and Write tools, repeating the span attribute of the same name | `OTEL_LOG_TOOL_DETAILS` |
+| `bash_command` | Command string for the Bash tool | `OTEL_LOG_TOOL_DETAILS` |
 
 The parent span's `tool_name` attribute tells you which tool an event came from. An attribute cut at the content limit is accompanied by `<attribute>_truncated` and `<attribute>_original_length`.
 
 **`claude_code.tool.blocked_on_user`**
 
-| Attribute     | Description                                                               | Gated by |
-| ------------- | ------------------------------------------------------------------------- | -------- |
-| `duration_ms` | Time spent waiting for the permission decision                            |          |
-| `decision`    | `accept` or `reject`                                                      |          |
-| `source`      | Decision source, matching the [Tool decision event](#tool-decision-event) |          |
+| Attribute | Description | Gated by |
+| - | - | - |
+| `duration_ms` | Time spent waiting for the permission decision | |
+| `decision` | `accept` or `reject` | |
+| `source` | Decision source, matching the [Tool decision event](#tool-decision-event) | |
 
 **`claude_code.tool.execution`**
 
-| Attribute             | Description                                                                                                                                                                                                                                                      | Gated by                |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| `duration_ms`         | Time spent running the tool body                                                                                                                                                                                                                                 |                         |
-| `tool_use_id`         | Same value as on the parent `claude_code.tool` span                                                                                                                                                                                                              |                         |
-| `gen_ai.tool.call.id` | Same value as `tool_use_id`. OpenTelemetry GenAI semantic convention                                                                                                                                                                                             |                         |
-| `success`             | `true` or `false`                                                                                                                                                                                                                                                |                         |
-| `error`               | Error category string when execution failed, such as `Error:ENOENT` or `ShellError`. Contains the full error message instead when the gate is set                                                                                                                | `OTEL_LOG_TOOL_DETAILS` |
-| `error_class`         | The error category in identifier form, with characters outside letters, digits, and underscores replaced by `_`, such as `Error_ENOENT` or `ShellError`. Carries the category even when `error` carries the full message. Requires Claude Code v2.1.268 or later |                         |
+| Attribute | Description | Gated by |
+| - | - | - |
+| `duration_ms` | Time spent running the tool body | |
+| `tool_use_id` | Same value as on the parent `claude_code.tool` span | |
+| `gen_ai.tool.call.id` | Same value as `tool_use_id`. OpenTelemetry GenAI semantic convention | |
+| `success` | `true` or `false` | |
+| `error` | Error category string when execution failed, such as `Error:ENOENT` or `ShellError`. Contains the full error message instead when the gate is set | `OTEL_LOG_TOOL_DETAILS` |
+| `error_class` | The error category in identifier form, with characters outside letters, digits, and underscores replaced by `_`, such as `Error_ENOENT` or `ShellError`. Carries the category even when `error` carries the full message. Requires Claude Code v2.1.268 or later | |
 
 **`claude_code.hook`**
 
@@ -313,17 +324,17 @@ This span appears only when detailed beta tracing is active, which requires `ENA
 
 In interactive CLI sessions, detailed beta tracing also requires your organization to be allowlisted for the feature. Agent SDK and non-interactive `-p` sessions don't require allowlisting.
 
-| Attribute                | Description                                      | Gated by                |
-| ------------------------ | ------------------------------------------------ | ----------------------- |
-| `hook_event`             | Hook event type, such as `PreToolUse`            |                         |
-| `hook_name`              | Full hook name, such as `PreToolUse:Write`       |                         |
-| `num_hooks`              | Number of matching hook commands executed        |                         |
-| `hook_definitions`       | JSON-serialized hook configuration               | `OTEL_LOG_TOOL_DETAILS` |
-| `duration_ms`            | Wall-clock duration of all matching hooks        |                         |
-| `num_success`            | Count of hooks that completed successfully       |                         |
-| `num_blocking`           | Count of hooks that returned a blocking decision |                         |
-| `num_non_blocking_error` | Count of hooks that failed without blocking      |                         |
-| `num_cancelled`          | Count of hooks cancelled before completion       |                         |
+| Attribute | Description | Gated by |
+| - | - | - |
+| `hook_event` | Hook event type, such as `PreToolUse` | |
+| `hook_name` | Full hook name, such as `PreToolUse:Write` | |
+| `num_hooks` | Number of matching hook commands executed | |
+| `hook_definitions` | JSON-serialized hook configuration | `OTEL_LOG_TOOL_DETAILS` |
+| `duration_ms` | Wall-clock duration of all matching hooks | |
+| `num_success` | Count of hooks that completed successfully | |
+| `num_blocking` | Count of hooks that returned a blocking decision | |
+| `num_non_blocking_error` | Count of hooks that failed without blocking | |
+| `num_cancelled` | Count of hooks cancelled before completion | |
 
 <span id="new-context-gates" />
 
@@ -484,27 +495,58 @@ export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 ```
 
+## Telemetry from cloud sessions and Claude Tag
+
+[Cloud sessions](/docs/en/claude-code-on-the-web), including [Claude Tag](https://claude.com/docs/claude-tag/overview) channel sessions, run in [cloud environments](/docs/en/cloud-environments) rather than on your users' devices, so a managed settings file or shell profile on those devices doesn't configure their telemetry. For sessions in Anthropic-hosted environments, this section covers where to set the telemetry variables, how to make your collector reachable from the environment, and how to tell cloud and Claude Tag sessions apart in the exported data.
+
+To export telemetry from those sessions, set `CLAUDE_CODE_ENABLE_TELEMETRY` and the `OTEL_*` variables, using the same keys as the [administrator configuration](#administrator-configuration) example, in one of two places:
+
+* **Server-managed settings**: add them to the `env` block of your organization's [server-managed settings](/docs/en/server-managed-settings). Claude Code fetches those settings at startup wherever [server-managed settings apply](/docs/en/model-config#surface-coverage), which includes your users' machines and cloud sessions other than Claude Tag channel sessions. Claude Tag sessions don't receive your server-managed settings, so this route doesn't configure them.
+* **The environment's variables**: add them to a cloud environment's [environment variables](/docs/en/cloud-environments#set-environment-variables) to configure only the sessions that run in that environment. This is the route that reaches Claude Tag sessions.
+
+Anyone who uses an environment can read its variables, so don't put a credential there, such as a collector token in `OTEL_EXPORTER_OTLP_HEADERS`. An [API credential](/docs/en/cloud-environments#add-api-credentials) on the environment doesn't help either, because Claude Code's own telemetry export is one of the [requests that never get the credential](/docs/en/cloud-environments#requests-that-never-get-the-credential). If your collector requires a credential, configure the whole export through server-managed settings instead, because when you set a credential there, [Claude Code removes endpoint variables set outside managed settings](#how-managed-settings-lock-the-otlp-destination).
+
+Keep these constraints in mind when you configure telemetry for cloud sessions:
+
+* **Let sessions reach the collector**: Claude Code sends the export through the session's network, so whether it reaches the host in your `OTEL_EXPORTER_OTLP_ENDPOINT` depends on the environment's [network access level](/docs/en/cloud-environments#access-levels). If sessions can't reach the collector's domain at the level you chose, [add the domain to the environment's allowlist](/docs/en/cloud-environments#allow-specific-domains), because no server-managed setting adds domains to an environment's network allowlist.
+* **Claude Tag channels use organization-level environments**: channel sessions run in organization-level environments rather than members' personal ones, so make the allowlist and any environment-variable changes on the [shared environment](/docs/en/cloud-environments#organization-shared-environments) set as your organization's default or pinned to the channel.
+* **Cowork is configured separately**: Cowork sessions don't receive server-managed settings, as the [surface coverage table](/docs/en/model-config#surface-coverage) shows, so the server-managed `env` block doesn't configure their telemetry.
+
+### Attribute telemetry to cloud sessions
+
+By default, metrics and events from a cloud session carry the [standard attributes](#standard-attributes), including `session.id`, `ccr.session.id`, and `organization.id`, so you can filter by session or organization without extra configuration. The `ccr.session.id` value is the session's `CLAUDE_CODE_REMOTE_SESSION_ID`. To turn it into the session's transcript URL, see [Link output back to the session](/docs/en/cloud-environments#link-output-back-to-the-session).
+
+To attribute telemetry in more detail, use these options:
+
+* **Identify Claude Tag sessions**: set `OTEL_METRICS_INCLUDE_ENTRYPOINT=true`, as described under [Metrics cardinality control](#metrics-cardinality-control). Metrics then carry `app.entrypoint`, whose value is `claude-in-slack` for Claude Tag sessions.
+* **Add custom attributes**: set [`OTEL_RESOURCE_ATTRIBUTES`](#multi-team-organization-support) in the same place you set the other `OTEL_*` variables for those sessions. If you `export` it in the environment's [setup script](/docs/en/cloud-environments#setup-scripts) instead, the value doesn't reach Claude Code: the setup script is a separate Bash script that runs before Claude Code launches, and variables it exports end with it.
+
+In Claude Tag channel sessions, Claude works as your organization's [shared identity](/docs/en/cloud-environments#set-the-environment-a-claude-tag-channel-uses) rather than as any member, so don't rely on the `user.*` attributes to identify who tagged Claude.
+
 ## Available metrics and events
 
 ### Standard attributes
 
 All metrics and events share these standard attributes:
 
-| Attribute                                                                               | Description                                                                                                                                                                                                                          | Controlled By                                                                              |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `session.id`                                                                            | Unique session identifier                                                                                                                                                                                                            | `OTEL_METRICS_INCLUDE_SESSION_ID` (default: true)                                          |
-| `app.version`                                                                           | Current Claude Code version                                                                                                                                                                                                          | `OTEL_METRICS_INCLUDE_VERSION` (default: false)                                            |
-| `app.entrypoint`                                                                        | How the session was launched, such as `cli`, `sdk-cli`, `sdk-ts`, `sdk-py`, or `claude-vscode`                                                                                                                                       | `OTEL_METRICS_INCLUDE_ENTRYPOINT` (default: false)                                         |
-| `organization.id`                                                                       | Organization UUID (when authenticated)                                                                                                                                                                                               | Always included when available                                                             |
-| `user.account_uuid`                                                                     | Account UUID (when authenticated)                                                                                                                                                                                                    | `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` (default: true)                                        |
-| `user.account_id`                                                                       | Account ID in tagged format matching Anthropic admin APIs (when authenticated), such as `user_01BWBeN28...`                                                                                                                          | `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` (default: true)                                        |
-| `user.id`                                                                               | Random anonymous identifier generated on first run and persisted in `~/.claude.json`. It contains no personal information and is not derived from your Claude account. Deleting the file produces a new unrelated value on next run. | Always included                                                                            |
-| `user.email`                                                                            | User email address, from your sign-in or, in a [cloud session](/docs/en/claude-code-on-the-web), from the session's own credentials                                                                                                       | Always included when available                                                             |
-| `terminal.type`                                                                         | Terminal type, such as `iTerm.app`, `vscode`, `cursor`, or `tmux`                                                                                                                                                                    | Always included when detected                                                              |
-| Keys from `OTEL_RESOURCE_ATTRIBUTES`                                                    | Custom attributes you set, such as `department` or `team.id`. See [Multi-team organization support](#multi-team-organization-support)                                                                                                | `OTEL_METRICS_INCLUDE_RESOURCE_ATTRIBUTES` (default: true)                                 |
-| `vcs.repository.url.full`, `vcs.owner.name`, `vcs.repository.name`, `vcs.provider.name` | The session repository's identity, derived from its `origin` remote. See [Repository attributes](#repository-attributes)                                                                                                             | `OTEL_METRICS_INCLUDE_REPOSITORY` (default: false). Requires Claude Code v2.1.269 or later |
+| Attribute | Description | Controlled By |
+| - | - | - |
+| `session.id` | Unique session identifier | `OTEL_METRICS_INCLUDE_SESSION_ID` (default: true) |
+| `ccr.session.id` | Cloud session identifier, the value of `CLAUDE_CODE_REMOTE_SESSION_ID`, on sessions that run in a [cloud environment](/docs/en/cloud-environments) | `OTEL_METRICS_INCLUDE_SESSION_ID` (default: true) |
+| `app.version` | Current Claude Code version | `OTEL_METRICS_INCLUDE_VERSION` (default: false) |
+| `app.entrypoint` | How the session was launched, such as `cli`, `sdk-cli`, `sdk-ts`, `sdk-py`, `claude-vscode`, or `claude-in-slack` for Claude Tag sessions | `OTEL_METRICS_INCLUDE_ENTRYPOINT` (default: false) |
+| `organization.id` | Organization UUID (when authenticated) | Always included when available |
+| `user.account_uuid` | Account UUID (when authenticated) | `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` (default: true) |
+| `user.account_id` | Account ID in tagged format matching Anthropic admin APIs (when authenticated), such as `user_01BWBeN28...` | `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` (default: true) |
+| `user.id` | Random anonymous identifier generated on first run and persisted in `~/.claude.json`. It contains no personal information and is not derived from your Claude account. Deleting the file produces a new unrelated value on next run. | Always included |
+| `user.email` | User email address, from your sign-in or, in a [cloud session](/docs/en/claude-code-on-the-web), from the session's own credentials | Always included when available |
+| `terminal.type` | Terminal type, such as `iTerm.app`, `vscode`, `cursor`, or `tmux` | Always included when detected |
+| Keys from `OTEL_RESOURCE_ATTRIBUTES` | Custom attributes you set, such as `department` or `team.id`. See [Multi-team organization support](#multi-team-organization-support) | `OTEL_METRICS_INCLUDE_RESOURCE_ATTRIBUTES` (default: true) |
+| `vcs.repository.url.full`, `vcs.owner.name`, `vcs.repository.name`, `vcs.provider.name` | The session repository's identity, derived from its `origin` remote. See [Repository attributes](#repository-attributes) | `OTEL_METRICS_INCLUDE_REPOSITORY` (default: false). Requires Claude Code v2.1.269 or later |
 
-When Claude Code is signed in to a [Claude apps gateway](/docs/en/claude-apps-gateway), the CLI stamps exports with the authenticated identity from the gateway session: `user.id` is the IdP subject rather than an anonymous installation identifier, `user.email` is the signed-in email, and `user.groups` carries IdP group membership as a comma-separated string. Each export also carries `identity.source: gateway-oidc`. The gateway identity is applied last, so `user.*` and `identity.*` keys set through `OTEL_RESOURCE_ATTRIBUTES` are ignored on gateway sessions.
+In sessions signed in to a [Claude apps gateway](/docs/en/claude-apps-gateway) through `/login`, the CLI stamps exports with the authenticated identity: `user.id` is the IdP subject, `user.email` is the signed-in email, and `user.groups` carries IdP group membership as a comma-separated string. Each export also carries `identity.source: gateway-oidc`. The gateway identity is applied last, so `user.*` and `identity.*` keys set through `OTEL_RESOURCE_ATTRIBUTES` are ignored on those sessions.
+
+For the identity attributes on Claude Desktop and Cowork sessions that connect through a gateway, see the [gateway `telemetry` reference](/docs/en/claude-apps-gateway-config#telemetry).
 
 Events additionally include the following attributes. These are never attached to metrics because they would cause unbounded cardinality:
 
@@ -517,18 +559,22 @@ Events additionally include the following attributes. These are never attached t
 
 Set `OTEL_METRICS_INCLUDE_REPOSITORY=true` to tag metrics and events with the identity of the session's repository, so a shared collector can attribute usage per repository. Requires Claude Code v2.1.269 or later.
 
-Claude Code derives these attributes once per session from the repository's `origin` remote. The HTTPS and SSH remotes of one repository produce identical values:
+Claude Code derives these attributes once per session from the repository's `origin` remote. When the HTTPS and SSH remotes of a repository name the same host and the same path, as they do on GitHub, GitLab, and Bitbucket Cloud, both produce identical values:
 
-| Attribute                 | Value                                                                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vcs.repository.url.full` | The repository's browser URL without `.git`, such as `https://github.com/example-org/example-repo`                                                  |
-| `vcs.owner.name`          | The owner or group path, such as `example-org`; omitted when the remote path has a single segment                                                   |
-| `vcs.repository.name`     | The bare repository name, such as `example-repo`                                                                                                    |
-| `vcs.provider.name`       | `github`, `gitlab`, `bitbucket`, or `gitea` when Claude Code recognizes the remote's host or URL shape as one of those providers; omitted otherwise |
+| Attribute | Value |
+| - | - |
+| `vcs.repository.url.full` | The repository's browser URL without `.git`, such as `https://github.com/example-org/example-repo` |
+| `vcs.owner.name` | The owner or group path, such as `example-org`; omitted when the remote path has a single segment |
+| `vcs.repository.name` | The bare repository name, such as `example-repo` |
+| `vcs.provider.name` | `github`, `gitlab`, `bitbucket`, or `gitea` when Claude Code recognizes the remote's host or URL shape as one of those providers; omitted otherwise |
 
 Values are lowercased, and credentials, query strings, and fragments from the remote URL never appear in them. The attributes are omitted when the session has no `origin` remote, when the remote isn't URL-shaped, or when the only enclosing repository is your home directory.
 
+To get these attributes from a [cloud session](/docs/en/claude-code-on-the-web), set the telemetry variables, including `OTEL_METRICS_INCLUDE_REPOSITORY`, on its [cloud environment](/docs/en/cloud-environments#set-environment-variables). Also allow your collector's domain in the environment's [network access](/docs/en/cloud-environments#network-access).
+
 A `vcs.*` key you declare in [`OTEL_RESOURCE_ATTRIBUTES`](#multi-team-organization-support) replaces the derived value for that key. If you declare `vcs.repository.url.full`, Claude Code never reads the remote and reports only the keys you declare.
+
+If HTTPS and SSH clones of one repository report different values, such as on a self-hosted install whose HTTPS clone URL carries a path prefix the SSH URL lacks, declare `vcs.repository.url.full` in `OTEL_RESOURCE_ATTRIBUTES` along with every other `vcs.*` key you want reported. Every clone then reports the identity you declare.
 
 The attributes flow only to your own exporters; Anthropic's telemetry drops every `vcs.*` key.
 
@@ -536,16 +582,16 @@ The attributes flow only to your own exporters; Anthropic's telemetry drops ever
 
 Claude Code exports the following metrics. The Unit column shows the OpenTelemetry unit string attached to each metric; count metrics carry none.
 
-| Metric Name                           | Description                                     | Unit   |
-| ------------------------------------- | ----------------------------------------------- | ------ |
-| `claude_code.session.count`           | Count of CLI sessions started                   | none   |
-| `claude_code.lines_of_code.count`     | Count of lines of code modified                 | none   |
-| `claude_code.pull_request.count`      | Number of pull requests created                 | none   |
-| `claude_code.commit.count`            | Number of git commits created                   | none   |
-| `claude_code.cost.usage`              | Cost of the Claude Code session                 | USD    |
-| `claude_code.token.usage`             | Number of tokens used                           | tokens |
-| `claude_code.code_edit_tool.decision` | Count of code editing tool permission decisions | none   |
-| `claude_code.active_time.total`       | Total active time                               | s      |
+| Metric Name | Description | Unit |
+| - | - | - |
+| `claude_code.session.count` | Count of CLI sessions started | none |
+| `claude_code.lines_of_code.count` | Count of lines of code modified | none |
+| `claude_code.pull_request.count` | Number of pull requests created | none |
+| `claude_code.commit.count` | Number of git commits created | none |
+| `claude_code.cost.usage` | Cost of the Claude Code session | USD |
+| `claude_code.token.usage` | Number of tokens used | tokens |
+| `claude_code.code_edit_tool.decision` | Count of code editing tool permission decisions | none |
+| `claude_code.active_time.total` | Total active time | s |
 
 When `prometheus` is the only exporter listed in `OTEL_METRICS_EXPORTER`, Claude Code omits the `USD`, `tokens`, and `s` units from the exported metrics so the scrape stays valid Prometheus text format. Metric names don't change, and configurations that combine exporters, such as `otlp,prometheus`, keep the units. Before v2.1.216, the Prometheus scrape included OpenMetrics-only `# UNIT` lines that some scrapers rejected.
 
@@ -592,6 +638,8 @@ Incremented when creating git commits via Claude Code.
 
 Incremented after each API request.
 
+The `agent.name`, `skill.name`, `plugin.name`, `mcp_server.name`, and `mcp_tool.name` attributes each redact some names to a `"custom"` or `"third-party"` placeholder by default. If you set `OTEL_LOG_TOOL_DETAILS=1`, they carry the real names instead. Before v2.1.273, the cost and token counters and the `api_request`, `api_error`, and `api_refusal` events carried the redacted values even with `OTEL_LOG_TOOL_DETAILS=1` set.
+
 **Attributes**:
 
 * All [standard attributes](#standard-attributes)
@@ -600,9 +648,9 @@ Incremented after each API request.
 * `speed`: `"fast"` when the request used fast mode. Absent otherwise
 * `effort`: [Effort level](/docs/en/model-config#adjust-effort-level) applied to the request: `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. Absent when Claude Code sends no effort level, for example on a model that doesn't support effort.
 * `agent.name`: Subagent type that issued the request. Built-in agent names and agents from official-marketplace plugins appear verbatim. Other user-defined agent names are replaced with `"custom"`. Absent when the request was not issued by a named subagent type.
-* `skill.name`: Skill active for the request, set by the Skill tool, a `/` command, or inherited by a spawned subagent. Built-in, bundled, user-defined, and official-marketplace plugin skill names appear verbatim. Third-party plugin skill names are replaced with `"third-party"`. Absent when no skill is active.
+* `skill.name`: Skill active for the request, set by the Skill tool or a `/` command, or inherited by a spawned subagent. Built-in, bundled, user-defined, and official-marketplace plugin skill names appear verbatim. Third-party plugin skill names are replaced with `"third-party"`. Absent when no skill is active.
 * `plugin.name`: Owning plugin when the active skill or subagent is provided by a plugin. Official-marketplace plugin names appear verbatim. Third-party plugin names are replaced with `"third-party"`. Absent when neither the skill nor the subagent has an owning plugin.
-* `marketplace.name`: Marketplace the owning plugin was installed from. Only emitted for official-marketplace plugins. Absent otherwise.
+* `marketplace.name`: Marketplace the owning plugin was installed from. Only emitted for official-marketplace plugins, even with `OTEL_LOG_TOOL_DETAILS=1` set. Absent otherwise.
 * `mcp_server.name`: MCP server whose tool result this request consumed. Built-in, claude.ai-proxied, and official-registry server names appear verbatim. User-configured server names are replaced with `"custom"`. Absent when the request consumed no MCP tool result. Before v2.1.222, Claude Code set this attribute on every request after an MCP tool call, not only on requests that consumed a tool result, so dashboards that aggregate it show a step down after you upgrade.
 * `mcp_tool.name`: MCP tool whose result this request consumed, with the same redaction and version behavior as `mcp_server.name`. Absent when the request consumed no MCP tool result.
 
@@ -649,11 +697,12 @@ Claude Code exports the following events via OpenTelemetry logs/events (when `OT
 
 When a user submits a prompt, Claude Code may make multiple API calls and run several tools. The `prompt.id` attribute lets you tie all of those events back to the single prompt that triggered them.
 
-| Attribute           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt.id`         | UUID v4 identifier linking all events produced while processing a single user prompt                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `event.sequence`    | 0-based counter for ordering events, counted per Claude Code process rather than per session                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `message.uuid`      | UUID of the message as persisted in the session transcript, the `~/.claude/projects/*/*.jsonl` files. Present on `assistant_response`, on `api_response_body`, and on `user_prompt` except for command dispatches, which can produce zero or many messages. On `assistant_response` and `api_response_body`, this is the response's final transcript entry, which the next turn's `parentUuid` chains from. Requires Claude Code v2.1.214 or later, or v2.1.274 or later on `api_response_body`   |
+| Attribute | Description |
+| - | - |
+| `prompt.id` | UUID v4 identifier linking all events produced while processing a single user prompt |
+| `event.sequence` | 0-based counter for ordering events, counted per Claude Code process rather than per session |
+| `message.uuid` | UUID of the message as persisted in the session transcript, the `~/.claude/projects/*/*.jsonl` files. Present on `assistant_response`, on `api_response_body`, and on `user_prompt` except for command dispatches, which can produce zero or many messages. On `assistant_response` and `api_response_body`, this is the response's final transcript entry, which the next turn's `parentUuid` chains from. Requires Claude Code v2.1.214 or later, or v2.1.274 or later on `api_response_body` |
+| `request_id` | Server-assigned ID of the API request, read from the `request-id` response header, such as `req_011...`. On a response with no `request-id` header, as on [Amazon Bedrock](/docs/en/amazon-bedrock), the value comes from the `x-amzn-requestid` header instead. Present on `api_request`, `api_error`, `api_refusal`, `assistant_response`, and `api_response_body` when the response carries either header. Matches the same attribute on the `llm_request` trace span. The `x-amzn-requestid` source requires Claude Code v2.1.282 or later |
 | `client_request_id` | Client-generated UUID sent as the `x-client-request-id` request header. Present on `api_request` and `api_error` on first-party API connections; absent on third-party provider backends and when the request was retried through the non-streaming fallback. Pairs a request with its response and remains available for failures such as timeouts that never produced a server `request_id`. Matches the same attribute on the `llm_request` trace span. Requires Claude Code v2.1.214 or later |
 
 To trace all activity triggered by a single prompt, filter your events by a specific `prompt.id` value. This returns the user\_prompt event, any api\_request events, and any tool\_result events that occurred while processing that prompt.
@@ -699,7 +748,7 @@ Logged after each API request that returns text content from the model. Only the
 * `response_length`: Length of the response text in characters
 * `response`: Response text, truncated at the content limit (60 KB by default). Redacted to `<REDACTED>` by default. Set `OTEL_LOG_ASSISTANT_RESPONSES=1` to include it. When `OTEL_LOG_ASSISTANT_RESPONSES` is unset, `OTEL_LOG_USER_PROMPTS` controls it instead, so set `OTEL_LOG_ASSISTANT_RESPONSES=0` to keep responses redacted while prompt logging is on
 * `model`: Model identifier (for example, "claude-sonnet-5")
-* `request_id`: Anthropic API request ID from the response's `request-id` header. Present only when the API returns one
+* `request_id`: API request ID, described under [Event correlation attributes](#event-correlation-attributes)
 * `message.uuid`: UUID of the response's final transcript entry. An API response is persisted as one transcript entry per content block; this is the last one, which the next turn's `parentUuid` chains from. Requires Claude Code v2.1.214 or later
 * `query_source`: Subsystem that issued the request, such as `"repl_main_thread"`, `"compact"`, or a subagent name
 
@@ -755,7 +804,7 @@ Logged for each API request to Claude.
 * `output_tokens`: Number of output tokens
 * `cache_read_tokens`: Number of tokens read from cache
 * `cache_creation_tokens`: Number of tokens used for cache creation
-* `request_id`: Anthropic API request ID from the response's `request-id` header, such as `"req_011..."`. Present only when the API returns one.
+* `request_id`: API request ID, such as `"req_011..."`, described under [Event correlation attributes](#event-correlation-attributes).
 * `client_request_id`: Client-generated UUID sent as the `x-client-request-id` request header; see the [event correlation attributes](#event-correlation-attributes) table for when it's present. Requires Claude Code v2.1.214 or later
 * `speed`: `"fast"` or `"normal"`, indicating whether fast mode was active
 * `query_source`: Subsystem that issued the request, such as `"repl_main_thread"`, `"compact"`, or a subagent name
@@ -779,7 +828,7 @@ Logged when an API request to Claude fails.
 * `status_code`: HTTP status code as a number. Absent for non-HTTP errors such as connection failures.
 * `duration_ms`: Request duration in milliseconds
 * `attempt`: Total number of attempts made, including the initial request (`1` means no retries occurred)
-* `request_id`: Anthropic API request ID from the response's `request-id` header, such as `"req_011..."`. Present only when the API returns one.
+* `request_id`: API request ID, such as `"req_011..."`, described under [Event correlation attributes](#event-correlation-attributes).
 * `client_request_id`: Client-generated UUID sent as the `x-client-request-id` request header. Available even when a failure such as a timeout or connection error never produced a server `request_id`; see the [event correlation attributes](#event-correlation-attributes) table for when it's present. Requires Claude Code v2.1.214 or later
 * `speed`: `"fast"` or `"normal"`, indicating whether fast mode was active
 * `query_source`: Subsystem that issued the request, such as `"repl_main_thread"`, `"compact"`, or a subagent name
@@ -799,7 +848,7 @@ Logged when an API request returns `stop_reason: "refusal"`. Refusals arrive on 
 * `event.timestamp`: ISO 8601 timestamp
 * `event.sequence`: per-process counter for ordering events, described under [Event correlation attributes](#event-correlation-attributes)
 * `model`: Model identifier from the request
-* `request_id`: Anthropic API request ID from the response's `request-id` header, such as `"req_011..."`. Present only when the API returns one.
+* `request_id`: API request ID, such as `"req_011..."`, described under [Event correlation attributes](#event-correlation-attributes).
 * `query_source`: Subsystem that issued the request, such as `"repl_main_thread"`, `"compact"`, or a subagent name. See [`api_request`](#api-request-event) for definitions.
 * `speed`: Either `"fast"` when [Fast mode](/docs/en/fast-mode) is active, or `"normal"`
 * `attempt`: Retry attempt number. The first attempt is `1`.
@@ -850,7 +899,7 @@ In file mode (`OTEL_LOG_RAW_API_BODIES=file:<dir>`), Claude Code also appends on
 * `body_truncated`: `"true"` when inline truncation occurred. Absent in file mode and when no truncation occurred.
 * `model`: Model identifier
 * `query_source`: Subsystem that issued the request
-* `request_id`: Anthropic API request ID from the response's `request-id` header, such as `"req_011..."`. Present only when the API returns one.
+* `request_id`: API request ID, such as `"req_011..."`, described under [Event correlation attributes](#event-correlation-attributes).
 * `request_body_id`: The `request_body_id` of the [`api_request_body` event](#api-request-body-event) that this response answers. Requires Claude Code v2.1.274 or later
 * `message.id`: Message ID the API assigned to the response, the `id` field of the response body. Requires Claude Code v2.1.274 or later
 * `message.uuid`: UUID of the response's final transcript entry. Together with `request_body_id`, it links a transcript message to the request and response bodies behind it. Requires Claude Code v2.1.274 or later
@@ -994,8 +1043,8 @@ Logged once per enabled plugin at session start. Use this event to inventory whi
 * `marketplace.name`: marketplace the plugin was installed from, when known. Redacted to `"third-party"` under the same condition as `plugin.name`
 * `plugin.version`: version from the plugin manifest. Included only when the name is not redacted and the manifest declares a version
 * `plugin.scope`: provenance category for the plugin: `"official"`, `"community"`, `"org"`, `"user-local"`, or `"default-bundle"`
-* `enabled_via`: how the plugin came to be enabled: `"default-enable"`, `"org-policy"`, `"admin-install"`, `"seed-mount"`, or `"user-install"`. The `"admin-install"` value means the plugin is set to required or auto-install for your organization in [**Organization settings > Plugins**](https://claude.ai/admin-settings/plugins). Before v2.1.246, Claude Code reported these plugins as `"user-install"` or `"seed-mount"`
-* `plugin_id_hash`: deterministic hash of the plugin name and marketplace, sent only to your configured exporter. Lets you count the distinct third-party plugins loaded across your fleet without recording their names. For [plugins synced from claude.ai](/docs/en/plugins-reference#synced-plugins), Claude Code hashes the plugin name with the marketplace name that claude.ai reports for the plugin, or with `synced` otherwise. Before v2.1.246, Claude Code didn't use the marketplace name claude.ai reports in the hash
+* `enabled_via`: how the plugin came to be enabled: `"default-enable"`, `"org-policy"`, `"admin-install"`, `"seed-mount"`, or `"user-install"`. The `"admin-install"` value means the plugin is set to required or auto-install for your organization in [**Organization settings > Plugins & skills**](https://claude.ai/admin-settings/skills?tab=inventory). Before v2.1.246, Claude Code reported these plugins as `"user-install"` or `"seed-mount"`
+* `plugin_id_hash`: deterministic hash of the plugin name and marketplace, sent only to your configured exporter. Lets you count the distinct third-party plugins loaded across your fleet without recording their names. For [plugins synced from claude.ai](/docs/en/plugins/loading#synced-plugins), Claude Code hashes the plugin name with the marketplace name that claude.ai reports for the plugin, or with `synced` otherwise. Before v2.1.246, Claude Code didn't use the marketplace name claude.ai reports in the hash
 * `has_hooks`: whether the plugin contributes hooks
 * `has_mcp`: whether the plugin contributes MCP servers
 * `host_owned_mcp`: `true` when the SDK host manages this plugin's MCP connections and Claude Code skipped reading the plugin's MCP server configuration, `false` otherwise. Requires Claude Code v2.1.172 or later
@@ -1247,7 +1296,7 @@ By default, the event carries the managed sources and the policy helper's state 
 * Set it in the `env` block of managed settings, user settings, or `--settings`, or in the environment you launch Claude Code with. A value in project or local settings doesn't turn it on, because a cloned repository can write them.
 * Server-managed settings can set it without showing the [security approval dialog](/docs/en/server-managed-settings#security-approval-dialogs), because the variable only adds your organization's own redacted policy to an event your organization already receives.
 
-In an interactive session in a folder you haven't [trusted](/docs/en/permissions#what-runs-before-you-trust-a-folder), Claude Code doesn't export the refusal event, because project and local settings could point the export at a different collector before trust.
+In an interactive session in a folder you haven't [trusted](/docs/en/permissions#what-runs-before-you-trust-a-folder), Claude Code doesn't export the refusal event.
 
 **Event Name**: `claude_code.managed_settings_resolved`
 
@@ -1297,12 +1346,12 @@ The exported metrics and events support a range of analyses:
 
 ### Usage monitoring
 
-| Metric                                                        | Analysis Opportunity                                                                                 |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `claude_code.token.usage`                                     | Break down by `type` (input/output), user, team, model, `skill.name`, `plugin.name`, or `agent.name` |
-| `claude_code.session.count`                                   | Track adoption and engagement over time                                                              |
-| `claude_code.lines_of_code.count`                             | Measure productivity by tracking code additions and removals, broken down by model                   |
-| `claude_code.commit.count` & `claude_code.pull_request.count` | Understand impact on development workflows                                                           |
+| Metric | Analysis Opportunity |
+| - | - |
+| `claude_code.token.usage` | Break down by `type` (input/output), user, team, model, `skill.name`, `plugin.name`, or `agent.name` |
+| `claude_code.session.count` | Track adoption and engagement over time |
+| `claude_code.lines_of_code.count` | Measure productivity by tracking code additions and removals, broken down by model |
+| `claude_code.commit.count` & `claude_code.pull_request.count` | Understand impact on development workflows |
 
 ### Cost monitoring
 
@@ -1359,11 +1408,11 @@ OpenTelemetry events are the audit data source for Claude Code activity. Every e
 
 ### Attribute actions to users
 
-The [standard attributes](#standard-attributes) on each event include the authenticated user's identity: `user.email`, `user.account_uuid`, `user.account_id`, and `organization.id` when signed in with a Claude account or, in a [cloud session](/docs/en/claude-code-on-the-web), when the session's own credentials carry them, plus `user.id` and the per-session `session.id`. `user.id` is an installation-scoped identifier, except on [Claude apps gateway](/docs/en/claude-apps-gateway) sessions, where it is the IdP subject from the gateway-issued token.
+The [standard attributes](#standard-attributes) on each event include the authenticated user's identity: `user.email`, `user.account_uuid`, `user.account_id`, and `organization.id` when signed in with a Claude account or, in a [cloud session](/docs/en/claude-code-on-the-web), when the session's own credentials carry them, plus `user.id` and the per-session `session.id`. `user.id` is an installation-scoped identifier, except in sessions signed in to a [Claude apps gateway](/docs/en/claude-apps-gateway) through `/login`, where it is the IdP subject from the gateway-issued token.
 
-MCP tool calls, Bash commands, and file edits are therefore attributed to the developer who started the session. Claude Code doesn't act under a separate service account; the identity recorded on each event is the developer's own Claude account, or the developer's IdP identity on a [Claude apps gateway](/docs/en/claude-apps-gateway) session.
+In a session a developer starts, MCP tool calls, Bash commands, and file edits are therefore attributed to that developer. Claude Code doesn't act under a separate service account there; the identity recorded on each event is the developer's own Claude account, or the developer's IdP identity on a [Claude apps gateway](/docs/en/claude-apps-gateway) session. In Claude Tag channel sessions, Claude works as your organization's [shared identity](/docs/en/cloud-environments#set-the-environment-a-claude-tag-channel-uses) instead.
 
-When Claude Code authenticates with a direct API key, or against Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry, there is no Claude account in the session and only `user.id` and `session.id` are populated. In these deployments, attach user identity yourself with `OTEL_RESOURCE_ATTRIBUTES`, set per user through the [managed settings](#administrator-configuration) file or a launch wrapper. Claude apps gateway sessions need none of this: the CLI stamps the IdP identity automatically, as described in [Standard attributes](#standard-attributes).
+When Claude Code authenticates with a direct API key, or against Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry, there is no Claude account in the session and only `user.id` and `session.id` are populated. In these deployments, attach user identity yourself with `OTEL_RESOURCE_ATTRIBUTES`, set per user through the [managed settings](#administrator-configuration) file or a launch wrapper. Claude apps gateway sessions need none of this: see [Standard attributes](#standard-attributes) for the identity their exports carry.
 
 ```bash theme={null}
 export OTEL_RESOURCE_ATTRIBUTES="enduser.id=jdoe@example.com,enduser.directory_id=S-1-5-21-..."
@@ -1373,11 +1422,11 @@ export OTEL_RESOURCE_ATTRIBUTES="enduser.id=jdoe@example.com,enduser.directory_i
 
 To capture MCP server activity with full call detail, enable the logs exporter and set `OTEL_LOG_TOOL_DETAILS=1`. Each MCP operation then produces structured events that carry the server name, tool name, and call arguments alongside the standard identity attributes:
 
-| Event                   | What it records for MCP                                                                                                                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mcp_server_connection` | Server connect, disconnect, and connection failure with `server_name`, `transport_type`, `server_scope`, and error detail                                                                          |
-| `tool_result`           | Each MCP tool call with `tool_name` and `mcp_server_scope`, a `tool_parameters` payload containing `mcp_server_name` and `mcp_tool_name`, and a `tool_input` payload containing the call arguments |
-| `tool_decision`         | Whether the call was allowed or denied, whether the decision came from config, a hook, or the user, and a `tool_parameters` payload containing `mcp_server_name` and `mcp_tool_name`               |
+| Event | What it records for MCP |
+| - | - |
+| `mcp_server_connection` | Server connect, disconnect, and connection failure with `server_name`, `transport_type`, `server_scope`, and error detail |
+| `tool_result` | Each MCP tool call with `tool_name` and `mcp_server_scope`, a `tool_parameters` payload containing `mcp_server_name` and `mcp_tool_name`, and a `tool_input` payload containing the call arguments |
+| `tool_decision` | Whether the call was allowed or denied, whether the decision came from config, a hook, or the user, and a `tool_parameters` payload containing `mcp_server_name` and `mcp_tool_name` |
 
 Without `OTEL_LOG_TOOL_DETAILS`, these events drop the identifying detail:
 
@@ -1389,16 +1438,16 @@ Without `OTEL_LOG_TOOL_DETAILS`, these events drop the identifying detail:
 
 When building detection rules, look up the signal you want to monitor and query your backend for the corresponding event and attributes:
 
-| Signal                                                                                                                     | Event                                                                                 | Key attributes                                                                                                                                                                                                                                   |
-| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Tool call allowed or denied, and by what                                                                                   | `tool_decision`                                                                       | `decision`, `source`, `tool_name`, `tool_parameters`                                                                                                                                                                                             |
-| Permission mode escalation                                                                                                 | `permission_mode_changed`                                                             | `from_mode`, `to_mode`, `trigger`                                                                                                                                                                                                                |
-| Policy hook blocked an action                                                                                              | `hook_execution_complete`                                                             | `hook_event`, `num_blocking`                                                                                                                                                                                                                     |
-| Login, logout, and authentication failure                                                                                  | `auth`                                                                                | `action`, `success`, `error_category`                                                                                                                                                                                                            |
-| MCP server connect or failure                                                                                              | `mcp_server_connection`                                                               | `status`, `server_name`, `is_plugin`, `error_code`                                                                                                                                                                                               |
-| Plugin installed and its source                                                                                            | `plugin_installed`                                                                    | `plugin.name`, `marketplace.name`, `marketplace.is_official`                                                                                                                                                                                     |
-| Commands run and files touched                                                                                             | `tool_result` (executed) or `tool_decision` (rejected) with `OTEL_LOG_TOOL_DETAILS=1` | `tool_parameters`; `tool_input` (`tool_result` only)                                                                                                                                                                                             |
-| Which managed settings sources a machine runs on, whether its policy helper is healthy, and why a machine refused to start | `managed_settings_resolved`                                                           | `managed_settings.trigger`, `managed_settings.sources`, `managed_settings.source_behavior`, `managed_settings.helper.state`, `error.type`; `managed_settings.settings` and `managed_settings.resolved_sha256` with `OTEL_LOG_MANAGED_SETTINGS=1` |
+| Signal | Event | Key attributes |
+| - | - | - |
+| Tool call allowed or denied, and by what | `tool_decision` | `decision`, `source`, `tool_name`, `tool_parameters` |
+| Permission mode escalation | `permission_mode_changed` | `from_mode`, `to_mode`, `trigger` |
+| Policy hook blocked an action | `hook_execution_complete` | `hook_event`, `num_blocking` |
+| Login, logout, and authentication failure | `auth` | `action`, `success`, `error_category` |
+| MCP server connect or failure | `mcp_server_connection` | `status`, `server_name`, `is_plugin`, `error_code` |
+| Plugin installed and its source | `plugin_installed` | `plugin.name`, `marketplace.name`, `marketplace.is_official` |
+| Commands run and files touched | `tool_result` (executed) or `tool_decision` (rejected) with `OTEL_LOG_TOOL_DETAILS=1` | `tool_parameters`; `tool_input` (`tool_result` only) |
+| Which managed settings sources a machine runs on, whether its policy helper is healthy, and why a machine refused to start | `managed_settings_resolved` | `managed_settings.trigger`, `managed_settings.sources`, `managed_settings.source_behavior`, `managed_settings.helper.state`, `error.type`; `managed_settings.settings` and `managed_settings.resolved_sha256` with `OTEL_LOG_MANAGED_SETTINGS=1` |
 
 Claude Code emits the raw event stream only. Anomaly detection, baselining, correlation across sessions, and alerting are the responsibility of your SIEM or observability backend.
 
@@ -1419,7 +1468,7 @@ Point `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` at your SIEM's OTLP receiver, or at an 
 }
 ```
 
-To confirm events arrive, submit a prompt in a session running under this configuration and check your SIEM for the `claude_code.user_prompt` event. If nothing arrives, run `claude --debug` and check the debug log for `[3P telemetry]` export errors.
+To confirm events arrive, submit a prompt in a session running under this configuration and check your SIEM for the `claude_code.user_prompt` event. If nothing arrives, start Claude Code with `claude --debug-file <path>` and check that log for `[3P telemetry]` export errors.
 
 ## Backend considerations
 
@@ -1475,8 +1524,9 @@ For a comprehensive guide on measuring return on investment for Claude Code, inc
   * `tool_result` and `tool_decision` events include a `tool_parameters` attribute with Bash commands, MCP server and tool names, and skill names. Fields such as `full_command` are emitted untruncated
   * `tool_result` events additionally include a `tool_input` attribute with file paths, URLs, search patterns, and other arguments. Individual values over 512 characters are truncated and the total is bounded to \~4 K characters
   * `user_prompt` events include the verbatim `command_name` for custom, plugin, and MCP commands
+  * The [cost and token counters](#cost-counter) and the `api_request`, `api_error`, and `api_refusal` events carry real agent, skill, plugin, and MCP server and tool names in their attribution attributes
   * Trace spans include the same `tool_input` attribute and input-derived attributes such as `file_path`, with the same truncation as `tool_input`
-* Tool content is not logged in trace spans by default. To include it, set `OTEL_LOG_TOOL_CONTENT=1`. The `claude_code.tool` span then carries a [`tool.output` span event](#tool-output-span-event) with raw file contents and Bash command output, truncated at the content limit (60 KB by default) per attribute. Tool content also reaches spans through [`new_context`, whose gate differs per span](#new-context-gates). Configure your telemetry backend to filter or redact these attributes as needed
+* Tool content is not logged in trace spans by default. To include it, set `OTEL_LOG_TOOL_CONTENT=1`. The `claude_code.tool` span then carries a [`tool.output` span event](#tool-output-span-event) with raw file contents, Bash command output, and what MCP tools, WebFetch, and WebSearch return, truncated at the content limit (60 KB by default) per attribute. Results from MCP tools, WebFetch, and WebSearch require Claude Code v2.1.283 or later. Tool content also reaches spans through [`new_context`, whose gate differs per span](#new-context-gates). Configure your telemetry backend to filter or redact these attributes as needed
 * Raw Anthropic Messages API request and response bodies are not logged by default. To include them, set `OTEL_LOG_RAW_API_BODIES` in your shell, user settings, or managed settings. It's ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env). The bodies contain the full conversation history, including the system prompt, every prior user and assistant turn, and tool results, so enabling this implies consent to everything the other `OTEL_LOG_*` content flags would reveal. Claude Code always redacts Claude's extended-thinking content from these bodies, regardless of other settings. The value you set determines how Claude Code delivers the bodies:
   * With `=1`, Claude Code emits `api_request_body` and `api_response_body` log events for each API call. The events' `body` attribute carries the JSON-serialized payload, truncated at the content limit (60 KB by default)
   * With `=file:<dir>`, Claude Code writes untruncated bodies to `.request.json` and `.response.json` files under that directory, and the events carry a `body_ref` path instead of the inline body. Ship the directory with a log collector or sidecar rather than through the telemetry stream.

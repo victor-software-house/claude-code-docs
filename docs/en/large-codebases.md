@@ -18,16 +18,16 @@ The [table below](#settings-on-this-page) lists each setting and what it accompl
 
 Each setting below is independent. They layer rather than replace each other, so apply whichever fit your repository. [Choose where to start Claude](#choose-where-to-start-claude) determines where your settings files live, so read it first. [Put it together](#put-it-together) shows all of them combined.
 
-| I want to                                                                                           | Use                                                                                        |
-| :-------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
-| Load only the conventions for the code you touch, instead of one root file covering every subsystem | Per-directory [CLAUDE.md files](#layer-claude-md-files-by-directory)                       |
-| Exclude CLAUDE.md files for packages you never work in                                              | [`claudeMdExcludes`](#exclude-irrelevant-claude-md-files)                                  |
-| Block Claude from opening build output, generated code, and vendored dependencies                   | [`Read` deny rules](#block-reads-of-generated-and-vendored-code) in `permissions.deny`     |
-| Find a symbol's definition or callers through the language server instead of scanning files         | A [code intelligence plugin](#reduce-file-reads-with-code-intelligence)                    |
-| Check out only the directories a task needs when Claude creates a worktree                          | [`worktree.sparsePaths`](#check-out-only-the-directories-you-need)                         |
-| Read and edit a sibling package or another repository from the same session                         | [`--add-dir`](#grant-access-across-packages-or-repositories) or `additionalDirectories`    |
-| Give Claude procedures specific to one area that load only when relevant                            | Per-directory [skills](#add-per-directory-skills)                                          |
-| Replace many per-directory CLAUDE.md files with one set of conventions everyone installs            | A [plugin](#centralize-conventions-when-layering-stops-scaling) in an internal marketplace |
+| I want to | Use |
+| :- | :- |
+| Load only the conventions for the code you touch, instead of one root file covering every subsystem | Per-directory [CLAUDE.md files](#layer-claude-md-files-by-directory) |
+| Exclude CLAUDE.md files for packages you never work in | [`claudeMdExcludes`](#exclude-irrelevant-claude-md-files) |
+| Block Claude from opening build output, generated code, and vendored dependencies | [`Read` deny rules](#block-reads-of-generated-and-vendored-code) in `permissions.deny` |
+| Find a symbol's definition or callers through the language server instead of scanning files | A [code intelligence plugin](#reduce-file-reads-with-code-intelligence) |
+| Check out only the directories a task needs when Claude creates a worktree | [`worktree.sparsePaths`](#check-out-only-the-directories-you-need) |
+| Read and edit a sibling package or another repository from the same session | [`--add-dir`](#grant-access-across-packages-or-repositories) or `additionalDirectories` |
+| Give Claude procedures specific to one area that load only when relevant | Per-directory [skills](#add-per-directory-skills) |
+| Replace many per-directory CLAUDE.md files with one set of conventions everyone installs | A [plugin](#centralize-conventions-when-layering-stops-scaling) in an internal marketplace |
 
 <Tip>
   For workflow techniques that keep context small in any repository, such as [running exploration in a subagent](/docs/en/best-practices#use-subagents-for-investigation) so file reads stay out of the main conversation, see [Best practices for Claude Code](/docs/en/best-practices). To roll out a baseline configuration to every developer in your organization, see [Set up Claude Code for your organization](/docs/en/admin-setup).
@@ -58,10 +58,10 @@ monorepo/
 
 Where you launch `claude` determines which files Claude can read and edit without an additional permission grant, which CLAUDE.md files load into context at startup, and which project settings apply.
 
-| Start from      | File access                             | CLAUDE.md loaded at launch                                           | Use when                                   |
-| :-------------- | :-------------------------------------- | :------------------------------------------------------------------- | :----------------------------------------- |
-| Repository root | Every file                              | Root only; subdirectory files load on demand when Claude reads there | Tasks span multiple packages or subsystems |
-| A subdirectory  | That subtree only, until you grant more | That directory's plus every ancestor's                               | Work is scoped to one package or subsystem |
+| Start from | File access | CLAUDE.md loaded at launch | Use when |
+| :- | :- | :- | :- |
+| Repository root | Every file | Root only; subdirectory files load on demand when Claude reads there | Tasks span multiple packages or subsystems |
+| A subdirectory | That subtree only, until you grant more | That directory's plus every ancestor's | Work is scoped to one package or subsystem |
 
 Project settings in `.claude/settings.json` aren't inherited from parent directories the way CLAUDE.md files are. For which directory's `.claude/settings.json` a session reads, see [where Claude Code looks for each file](/docs/en/settings#where-claude-code-looks-for-each-file).
 
@@ -110,10 +110,10 @@ For more on how CLAUDE.md files load and interact, see [Memory and project instr
 
 Per-directory `CLAUDE.md` files and [path-scoped rules](/docs/en/memory#path-specific-rules) under `.claude/rules/` both let you target instructions to part of the tree. They differ in where the file lives and when it loads.
 
-| Approach                             | File location                            | Loads when                                                                              | Use when                                                                                  |
-| :----------------------------------- | :--------------------------------------- | :-------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------- |
-| Per-directory `CLAUDE.md`            | Inside the directory, alongside its code | At launch when started from that directory, or on demand when Claude reads a file there | Directory owners maintain their own conventions; instructions are versioned with the code |
-| Path-scoped rule in `.claude/rules/` | Central `.claude/` at the repo root      | When Claude works with a file matching the rule's `paths:` glob                         | You want all conventions in one place, or the same rule applies to many scattered paths   |
+| Approach | File location | Loads when | Use when |
+| :- | :- | :- | :- |
+| Per-directory `CLAUDE.md` | Inside the directory, alongside its code | At launch when started from that directory, or on demand when Claude reads a file there | Directory owners maintain their own conventions; instructions are versioned with the code |
+| Path-scoped rule in `.claude/rules/` | Central `.claude/` at the repo root | When Claude works with a file matching the rule's `paths:` glob | You want all conventions in one place, or the same rule applies to many scattered paths |
 
 For a comparison that also covers skills, see [Compare similar features](/docs/en/features-overview#compare-similar-features).
 
@@ -182,7 +182,7 @@ Deny rules don't cover subprocesses that open files themselves. For the full pat
 
 ### Reduce file reads with code intelligence
 
-In a large codebase, finding where a symbol is defined or used can cost many file reads and grep calls. [Code intelligence plugins](/docs/en/discover-plugins#code-intelligence) connect Claude to a language server so it can jump to definitions, find references, and surface type errors directly instead of scanning the tree.
+In a large codebase, finding where a symbol is defined or used can cost many file reads and grep calls. [Code intelligence plugins](/docs/en/plugins/code-intelligence) connect Claude to a language server so it can jump to definitions, find references, and surface type errors directly instead of scanning the tree.
 
 The official marketplace has plugins for TypeScript, Python, Go, Rust, and other common languages. Run the command below inside a Claude Code session to install the TypeScript plugin:
 
@@ -193,11 +193,11 @@ The official marketplace has plugins for TypeScript, Python, Go, Rust, and other
 If the install fails, match the message Claude Code reports:
 
 * `Marketplace "claude-plugins-official" not found`: add the marketplace with `/plugin marketplace add anthropics/claude-plugins-official`, then retry the install.
-* The plugin is [not found in the marketplace](/docs/en/discover-plugins#install-plugins): check the plugin name.
+* The plugin is [not found in the marketplace](/docs/en/plugins/install#install-a-plugin): check the plugin name.
 
 To enable a plugin for everyone in the repository rather than installing it yourself, add it to the [`enabledPlugins` project setting](/docs/en/settings-reference#plugin-settings).
 
-Code intelligence plugins require the language's language server binary on each developer's machine. See [which binary each language requires](/docs/en/discover-plugins#code-intelligence). Installing from the official marketplace requires network access to GitHub, where the marketplace is hosted. On a restricted network, [add the marketplace from an internal Git host or local path](/docs/en/discover-plugins#add-from-other-git-hosts) instead.
+Code intelligence plugins require the language's language server binary on each developer's machine. See [which binary each language requires](/docs/en/plugins/code-intelligence). Installing from the official marketplace requires network access to GitHub, where the marketplace is hosted. On a restricted network, [add the marketplace from an internal Git host or local path](/docs/en/plugins/install#add-a-marketplace) instead.
 
 This pairs well with `claudeMdExcludes` and the `Read` deny rules above. Those keep irrelevant content out of context, and code intelligence keeps Claude from reading through what remains to locate a definition.
 
@@ -289,10 +289,10 @@ claude --add-dir ../shared
 
 However you add a directory, Claude can read and edit files in it. Whether the directory's CLAUDE.md, `.claude/rules/` files, and skills also load depends on how you added it:
 
-| Added with                             | Loads CLAUDE.md and rules                | Loads skills |
-| :------------------------------------- | :--------------------------------------- | :----------- |
-| `additionalDirectories` setting        | Never                                    | Never        |
-| `--add-dir` flag or `/add-dir` command | Only with the environment variable below | Yes          |
+| Added with | Loads CLAUDE.md and rules | Loads skills |
+| :- | :- | :- |
+| `additionalDirectories` setting | Never | Never |
+| `--add-dir` flag or `/add-dir` command | Only with the environment variable below | Yes |
 
 To load CLAUDE.md and rules files from a directory added with `--add-dir` or `/add-dir`, set the `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD` environment variable:
 
@@ -365,7 +365,7 @@ Which skills are in scope depends on where you start Claude:
 
 Names always load, but [when there are many, some skills lose their descriptions entirely](/docs/en/skills#skill-descriptions-are-cut-short), which can strip the keywords Claude uses to decide whether a skill applies. Keep descriptions short and lead with words a request would contain, like "writing or modifying tests in `packages/api/`".
 
-For skills that many directories share, such as PR conventions or a deploy checklist, place them in the repository root's `.claude/skills/` so they load from any starting directory. When shared skills need their own version history or must work across repositories, package them as a [plugin](/docs/en/plugins) instead. Plugin skills use a `plugin-name:skill-name` namespace, so they never collide with per-directory skills. A platform team can version and update them in one place.
+For skills that many directories share, such as PR conventions or a deploy checklist, place them in the repository root's `.claude/skills/` so they load from any starting directory. When shared skills need their own version history or must work across repositories, package them as a [plugin](/docs/en/plugins/overview) instead. Plugin skills use a `plugin-name:skill-name` namespace, so they never collide with per-directory skills. A platform team can version and update them in one place.
 
 To find which skills go unused, enable the OpenTelemetry [logs exporter](/docs/en/monitoring-usage) and set `OTEL_LOG_TOOL_DETAILS=1` so skill names are recorded verbatim instead of redacted. The [`skill_activated` event](/docs/en/monitoring-usage#skill-activated-event) records every invocation in its `skill.name` attribute, and `invocation_trigger` records whether a command, Claude, or a nested skill invoked it, which tells you what to consolidate or retire.
 
@@ -376,7 +376,7 @@ Per-directory CLAUDE.md files can become hard to govern as the codebase grows. C
 Move conventions and reference content out of always-loaded CLAUDE.md and into mechanisms that load on demand:
 
 * [Skills](/docs/en/skills): reference material Claude loads only when relevant to the task
-* [Plugins](/docs/en/plugins): versioned bundles of skills, hooks, and commands that a platform team owns centrally
+* [Plugins](/docs/en/plugins/overview): versioned bundles of skills, hooks, and commands that a platform team owns centrally
 * [MCP servers](/docs/en/mcp): if your organization already runs a code search or RAG index over the repository, expose it as an MCP tool so Claude queries it instead of reading files directly
 
 See [server-managed or endpoint-managed settings](/docs/en/server-managed-settings#choose-between-server-managed-and-endpoint-managed-settings) for how platform teams can enforce these centrally.

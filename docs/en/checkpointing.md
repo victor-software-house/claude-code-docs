@@ -46,7 +46,7 @@ Choosing Summarize up to here leaves you at the end of the conversation with the
 
 #### Rewind past a cleared conversation
 
-If you ran `/clear` earlier in the same Claude Code process, the rewind menu shows an additional entry at the top of the list labeled `/resume <session-id> (previous session)`. Select it to resume the conversation that was active before `/clear` ran. The entry is available until you exit Claude Code or resume a different session, and requires Claude Code v2.1.191 or later. On earlier versions, run `/resume` and pick the previous session from the list instead.
+If you ran `/clear` earlier in the same Claude Code process, the rewind menu shows an additional entry at the top of the list labeled `/resume <session-id> (previous session)`. Select it to resume the conversation that was active before `/clear` ran. The entry is available until you exit Claude Code or resume a different session.
 
 #### Guide a summary
 
@@ -92,7 +92,7 @@ Checkpointing only tracks files that have been edited within the current session
 
 ### Messages sent mid-turn not checkpointed
 
-When a message you [queue while Claude works](/docs/en/interactive-mode#queue-messages-while-claude-works) reaches Claude within the running turn, it joins that turn instead of starting a new one. The message appears in the conversation, but Claude Code doesn't create a checkpoint for it, and the rewind menu doesn't list it. A queued message that Claude Code sends as its own turn gets a checkpoint as usual.
+When a message you [queue while Claude works](/docs/en/interactive-mode#queue-messages-while-claude-works) reaches Claude within the running turn, it joins that turn instead of starting a new one. The message appears in the conversation, but Claude Code doesn't create a checkpoint for it, and the rewind menu doesn't list it. A queued message that Claude Code sends as part of a new turn gets a checkpoint as usual, including when several queued messages [share that turn](/docs/en/interactive-mode#when-claude-code-sends-what-you-queued).
 
 To remove such a message, or undo the edits Claude made after it, rewind to the prompt that started the turn. That rewinds the whole turn, including the work Claude did before your message arrived.
 

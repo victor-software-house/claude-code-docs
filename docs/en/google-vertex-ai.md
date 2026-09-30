@@ -230,9 +230,9 @@ For current and legacy model IDs, see [Models overview](https://platform.claude.
 
 Claude Code uses these default models when no pinning variables are set:
 
-| Model type       | Default value                |
-| :--------------- | :--------------------------- |
-| Primary model    | `claude-opus-5-5`            |
+| Model type | Default value |
+| :- | :- |
+| Primary model | `claude-opus-5-5` |
 | Small/fast model | `claude-sonnet-4-5@20250929` |
 
 Background tasks such as session title generation use the small/fast model, normally a Haiku-class model. On Google Cloud's Agent Platform, Claude Code uses the default Sonnet model for background tasks because Haiku may not be enabled in every project or region. Two selections change which model carries them:
@@ -287,7 +287,7 @@ For details, see [Google Cloud's Agent Platform IAM documentation](https://cloud
 
 Claude Sonnet 5, Opus 4.6 and later, and Sonnet 4.6 support the [1M token context window](https://platform.claude.com/docs/en/build-with-claude/context-windows#context-window-sizes-by-model) on Google Cloud's Agent Platform. Sonnet 5 always runs with the 1M window, with no `[1m]` variant to select. For the other models, Claude Code automatically enables the extended context window when you select a 1M model variant.
 
-The [setup wizard](#sign-in-with-agent-platform) offers a 1M context option when it pins models. To enable it for a manually pinned model instead, append `[1m]` to the model ID. See [Pin models for third-party deployments](/docs/en/model-config#pin-models-for-third-party-deployments) for details.
+The [setup wizard](#sign-in-with-agent-platform) offers a 1M context option when it pins models. To enable it for a manually pinned model instead, append `[1m]` to the model ID. See [Pin models for third-party deployments](/docs/en/model-config#pin-models-for-third-party-deployments) for details, including how to use the 1M window without changing the pin.
 
 ## Troubleshooting
 

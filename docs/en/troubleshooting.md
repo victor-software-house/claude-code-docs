@@ -8,19 +8,20 @@
 
 This page covers performance, stability, and search problems once Claude Code is running. For other issues, start with the page that matches where you're stuck:
 
-| Symptom                                                                                                                                              | Go to                                                                                    |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------- |
-| `command not found`, install fails, PATH issues, `EACCES`, TLS errors                                                                                | [Troubleshoot installation and login](/docs/en/troubleshoot-install)                          |
-| Update or install download fails with `The connection dropped while downloading the update` or `aborted`                                             | [Error reference](/docs/en/errors#the-connection-dropped-while-downloading-the-update)        |
+| Symptom | Go to |
+| :- | :- |
+| `command not found`, install fails, PATH issues, `EACCES`, TLS errors | [Troubleshoot installation and login](/docs/en/troubleshoot-install) |
+| Update or install download fails with `The connection dropped while downloading the update` or `aborted` | [Error reference](/docs/en/errors#the-connection-dropped-while-downloading-the-update) |
 | Login loops, OAuth errors, `403 Forbidden`, "organization disabled", Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry credentials | [Troubleshoot installation and login](/docs/en/troubleshoot-install#login-and-authentication) |
-| Settings not applying, hooks not firing, MCP servers not loading                                                                                     | [Debug your configuration](/docs/en/debug-your-config)                                        |
-| Session started in auto mode, or Claude edits files and runs commands without asking                                                                 | [Which mode a session starts in](/docs/en/permission-modes#which-mode-a-session-starts-in)    |
-| `API Error: 5xx`, `529 Overloaded`, `429`, request validation errors                                                                                 | [Error reference](/docs/en/errors)                                                            |
-| `model not found` or `you may not have access to it`                                                                                                 | [Error reference](/docs/en/errors#theres-an-issue-with-the-selected-model)                    |
-| VS Code extension not connecting or detecting Claude                                                                                                 | [VS Code integration](/docs/en/vs-code#fix-common-issues)                                     |
-| `Claude Code process exited with code 1` in VS Code or an SDK app                                                                                    | [Error reference](/docs/en/errors#claude-code-process-exited-with-code-n)                     |
-| JetBrains plugin or IDE not detected                                                                                                                 | [JetBrains integration](/docs/en/jetbrains#troubleshooting)                                   |
-| High CPU or memory, slow responses, hangs, search not finding files                                                                                  | [Performance and stability](#performance-and-stability) below                            |
+| Settings not applying, hooks not firing, MCP servers not loading | [Debug your configuration](/docs/en/debug-your-config) |
+| Session started in auto mode, or Claude edits files and runs commands without asking | [Which mode a session starts in](/docs/en/permission-modes#which-mode-a-session-starts-in) |
+| `API Error: 5xx`, `529 Overloaded`, `429`, request validation errors | [Error reference](/docs/en/errors) |
+| `model not found` or `you may not have access to it` | [Error reference](/docs/en/errors#theres-an-issue-with-the-selected-model) |
+| A command Claude runs fails with `Your disk quota is full`, `is full (ENOSPC)`, or `Command output was lost` | [Error reference](/docs/en/errors#disk-quota-or-temp-filesystem-is-full) |
+| VS Code extension not connecting or detecting Claude | [VS Code integration](/docs/en/vs-code#fix-common-issues) |
+| `Claude Code process exited with code 1` in VS Code or an SDK app | [Error reference](/docs/en/errors#claude-code-process-exited-with-code-n) |
+| JetBrains plugin or IDE not detected | [JetBrains integration](/docs/en/jetbrains#troubleshooting) |
+| High CPU or memory, slow responses, hangs, search not finding files | [Performance and stability](#performance-and-stability) below |
 
 If you're not sure which applies, run `/doctor` inside Claude Code for an automated check of your installation, settings, extensions, and context usage; it proposes fixes it can apply after you confirm. If `claude` won't start at all, run `claude doctor` from your shell instead. Run `/mcp` to check MCP server status.
 
@@ -47,7 +48,7 @@ If memory usage stays high after these steps, run `/heapdump` to write two files
   The `.heapsnapshot` file contains every string in the process, including your full conversation and credentials. Don't attach it to a public issue or share it.
 </Warning>
 
-The command also prints a summary in the conversation, showing resident set size, JS heap, array buffers, and unaccounted native memory, plus any leak indicators it detected, such as a high memory growth rate or an unusually high number of open handles. The summary says whether most memory is in the JS heap, which the snapshot captures, or in native memory, which it doesn't.
+The command also prints a summary in the conversation, showing the process's total memory, how much of it is in the JS heap, and how much sits outside the heap. The summary also lists any leak indicators, such as a high memory growth rate or an unusually high number of open handles. The summary says whether most memory is in the JS heap, which the snapshot captures, or in native memory, which it doesn't.
 
 Report the output or investigate it yourself:
 
