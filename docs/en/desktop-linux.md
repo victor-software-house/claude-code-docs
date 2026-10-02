@@ -95,7 +95,7 @@ sudo apt install ./claude-desktop_*.deb
 
 If apt reports `E: Unsupported file ./claude-desktop_*.deb given on commandline`, the pattern didn't match a `.deb` file in the current directory. Confirm the download completed, then run the command again from the directory that contains the file.
 
-Installing the `.deb` also registers Anthropic's apt repository at `/etc/apt/sources.list.d/claude-desktop.list`, so future updates arrive with your system's [regular package updates](#update).
+The `.deb` contains Anthropic's signing key and installs it at `/usr/share/keyrings/claude-desktop-archive-keyring.asc`, so you don't need to download the key yourself. Unless you turned registration off with `CLAUDE_DESKTOP_ADD_REPO`, the package also registers the apt repository at `/etc/apt/sources.list.d/claude-desktop.list`, so future updates arrive with your system's [regular package updates](#update).
 
 ## Update
 
@@ -144,6 +144,16 @@ If `apt` stops with `The following packages have unmet dependencies` or `Unsatis
 </h3>
 
 If `claude-desktop` exits with this message, you launched it as root. Log in as a regular user and launch it from there.
+
+### Your sign-in won't be saved on this device
+
+Claude Desktop saves your sign-in in your desktop's keyring, such as GNOME Keyring or KDE Wallet. If it can't reach an unlocked keyring, your sign-in isn't saved and you sign in again each time you launch the app. Pick the case that matches your system:
+
+* **No keyring installed, on a desktop other than KDE Plasma**: if you installed with `--no-install-recommends`, or on a minimal image that skips recommended packages, apt didn't install a keyring. Install GNOME Keyring with `sudo apt install gnome-keyring`.
+* **KDE Plasma with GNOME Keyring also installed**: KDE Wallet comes with the Plasma desktop. The two keyrings conflict, and Claude Desktop can show this notice even though KDE Wallet works. Remove the extra one with `sudo apt remove gnome-keyring`, then restart your computer.
+* **Keyring installed but locked**: unlock it.
+
+After the fix, restart the app and sign in. Then quit and launch it again to confirm the app opens with you still signed in.
 
 ### Cowork isn't available
 
