@@ -58,12 +58,14 @@ Each binding block specifies a **context** where the bindings apply:
 | `Attachments` | Image attachment navigation in select dialogs |
 | `Footer` | Footer indicator navigation (tasks, teams, diff, artifacts) |
 | `MessageSelector` | Rewind and summarize dialog message selection |
-| `DiffDialog` | Diff viewer navigation |
+| `DiffDialog` | [Diff viewer](#diff-actions) navigation |
 | `DiffPanel` | The [diff panel](/docs/en/interactive-mode#diff-panel) is open |
 | `ModelPicker` | Model picker effort level |
 | `EffortSlider` | Effort slider opened by `/effort` |
 | `Select` | Generic select/list components |
 | `Plugin` | Plugin dialog (browse, discover, manage) |
+| `Pane` | A pane drawn by a [mod](/docs/en/plugins/mods/interface#know-which-keys-your-mod-can-receive) has keyboard focus |
+| `PaneField` | An input field or select in a mod's pane has keyboard focus |
 | `Agents` | [Agent view](/docs/en/agent-view) (`claude agents`) |
 | `Scroll` | Conversation scrolling and text selection in fullscreen mode |
 
@@ -296,6 +298,8 @@ Before v2.1.283, this list ignored `Select` bindings and had its own actions: `m
 
 ### Diff actions
 
+These actions reach only Claude Code's earlier diff viewer, which `/diff` opens outside [fullscreen rendering](/docs/en/fullscreen) after you disable the [`cc-plugin-diff` mod](/docs/en/plugins/mods/overview#mods-built-into-claude-code) in `/plugin`. While that mod is enabled, `/diff` opens the [diff dialog](/docs/en/interactive-mode#diff-dialog) instead. A `keybindings.json` that names these actions loads without errors either way.
+
 Actions available in the `DiffDialog` context:
 
 | Action | Default | Description |
@@ -324,11 +328,13 @@ The diff detail view also binds pager-style keys to the standard [scroll actions
 
 ### Diff panel actions
 
-Actions for the [diff panel](/docs/en/interactive-mode#diff-panel) that `/diff` opens in fullscreen rendering. `app:cycleDiffBase` is in the `DiffPanel` context, which is active while the panel is open; the others are `Global`. The panel requires Claude Code v2.1.260 or later.
+Actions for the [diff panel](/docs/en/interactive-mode#diff-panel) that `/diff` opens in fullscreen rendering. `app:cycleDiffBase` is in the `DiffPanel` context, which is active while the panel is open; the others are `Global`.
+
+The built-in [`cc-plugin-diff` mod](/docs/en/plugins/mods/overview#mods-built-into-claude-code) draws this panel and handles `app:cycleDiffBase`, `app:diffFileListUp`, and `app:diffFileListDown`. `app:toggleReplTab`, `app:toggleDiffNoiseFilter`, and `app:toggleDiffPreSession` reach only Claude Code's earlier panel, which `/diff` opens after you disable `cc-plugin-diff` in `/plugin`.
 
 | Action | Default | Description |
 | :- | :- | :- |
-| `app:toggleReplTab` | (unbound) | Open or close the diff panel, the same as running `/diff` |
+| `app:toggleReplTab` | (unbound) | Open or close the diff panel |
 | `app:cycleDiffBase` | Ctrl+X B | Cycle the panel's comparison base: this session, uncommitted, then branch |
 | `app:diffFileListUp` | Ctrl+Up, Meta+Up | Scroll the panel's file list up when it overflows |
 | `app:diffFileListDown` | Ctrl+Down, Meta+Down | Scroll the panel's file list down when it overflows |
@@ -522,7 +528,15 @@ Set an action to `null` to unbind a default shortcut:
 
 This also works for chord bindings. Unbinding every chord that shares a prefix frees that prefix for use as a single-key binding. A chord in any active context keeps its prefix reserved, so you must unbind each chord in the context that defines it.
 
-Claude Code binds these default chords on the `ctrl+x` prefix: `ctrl+x ctrl+k`, `ctrl+x ctrl+e`, `ctrl+x enter`, `ctrl+x ctrl+a`, `ctrl+x ctrl+s`, and `ctrl+x tab` in `Chat`, `ctrl+x ctrl+b` in `Task`, and `ctrl+x b` in `DiffPanel`. The `ctrl+x enter` chord requires v2.1.247 or later, `ctrl+x b`, `ctrl+x ctrl+a`, and `ctrl+x tab` require v2.1.260 or later, and `ctrl+x ctrl+s` requires v2.1.275 or later.
+Claude Code binds these default chords on the `ctrl+x` prefix, by context:
+
+* `Chat`: `ctrl+x ctrl+k`, `ctrl+x ctrl+e`, `ctrl+x enter`, `ctrl+x ctrl+a`, `ctrl+x ctrl+s`, and `ctrl+x tab`
+* `Task`: `ctrl+x ctrl+b`
+* `DiffPanel`: `ctrl+x b`
+* `Pane`: `ctrl+x left`, `ctrl+x right`, `ctrl+x up`, `ctrl+x down`, and `ctrl+x x`
+* `PaneField`: `ctrl+x x`
+
+The `ctrl+x enter` chord requires v2.1.247 or later, `ctrl+x b`, `ctrl+x ctrl+a`, and `ctrl+x tab` require v2.1.260 or later, and `ctrl+x ctrl+s` requires v2.1.275 or later.
 
 To reclaim `ctrl+x` itself as a single-key binding, unbind all of them:
 
@@ -539,6 +553,22 @@ To reclaim `ctrl+x` itself as a single-key binding, unbind all of them:
       "context": "DiffPanel",
       "bindings": {
         "ctrl+x b": null
+      }
+    },
+    {
+      "context": "Pane",
+      "bindings": {
+        "ctrl+x left": null,
+        "ctrl+x right": null,
+        "ctrl+x up": null,
+        "ctrl+x down": null,
+        "ctrl+x x": null
+      }
+    },
+    {
+      "context": "PaneField",
+      "bindings": {
+        "ctrl+x x": null
       }
     },
     {

@@ -115,7 +115,7 @@ You can run Claude Code natively on Windows or inside WSL. Pick based on where y
 
 **Option 1: Native Windows**
 
-Run the install command from PowerShell or CMD. You do not need to run as Administrator. Installing [Git for Windows](https://git-scm.com/downloads/win) is optional. It enables the [Bash tool](/docs/en/tools-reference#bash-tool-behavior) by providing Git Bash.
+Run the install command from PowerShell or CMD. You do not need to run as Administrator. Installing [Git for Windows](https://git-scm.com/downloads/win) is optional. It provides Git Bash, which the [Bash tool](/docs/en/tools-reference#bash-tool-behavior) and the [Monitor tool](/docs/en/tools-reference#monitor-tool) need.
 
 Whether you install from PowerShell or CMD only affects which install command you run. Your prompt shows `PS C:\Users\YourName>` in PowerShell and `C:\Users\YourName>` without the `PS` in CMD. If you're new to the terminal, the [terminal guide](/docs/en/terminal-guide#windows) walks through each step.
 
@@ -237,9 +237,13 @@ Configure this via `/config` → **Auto-update channel**, or add it to your [set
 }
 ```
 
+A newly launched model can require a Claude Code version newer than the stable channel serves. To run the model now, move to the latest channel.
+
 For enterprise deployments, you can enforce a consistent release channel across your organization using [managed settings](/docs/en/managed-settings).
 
 Homebrew installations choose a channel by cask name instead of this setting: `claude-code` tracks stable and `claude-code@latest` tracks latest.
+
+Installations from the apt, dnf, and apk repositories choose a channel by repository instead of this setting. To switch one, follow [Install with Linux package managers](#install-with-linux-package-managers).
 
 ### Pin a minimum version
 
@@ -462,7 +466,7 @@ All repositories are signed with the [Claude Code release signing key](#binary-i
 
 ### Install with npm
 
-You can also install Claude Code as a global npm package. As of v2.1.198, the npm package requires [Node.js 22 or later](https://nodejs.org/en/download). On an older Node.js version, npm prints an `EBADENGINE` warning during install rather than failing; the install completes and `claude` still runs, since the package downloads a native binary that doesn't use your Node.js at runtime.
+You can also install Claude Code as a global npm package. The npm package requires [Node.js 22 or later](https://nodejs.org/en/download). On an older Node.js version, npm prints an `EBADENGINE` warning during install rather than failing; the install completes and `claude` still runs, since the package downloads a native binary that doesn't use your Node.js at runtime.
 
 ```bash theme={null}
 npm install -g @anthropic-ai/claude-code

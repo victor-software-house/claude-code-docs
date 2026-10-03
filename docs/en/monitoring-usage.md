@@ -285,7 +285,7 @@ Claude Code writes this event from a tool call's successful return, so a call th
 * A call to any tool other than Read, Edit, Write, Bash, WebFetch, WebSearch, and MCP tools
 * A Read that returns anything other than file text, such as an image, a PDF, or a re-read of a file whose contents haven't changed
 * An Edit or Write call, unless you also set `OTEL_LOG_TOOL_DETAILS=1`
-* A WebFetch or WebSearch call that Claude Code moved to the background because you interrupted the turn to [send your queued messages right away](/docs/en/interactive-mode#when-claude-code-sends-what-you-queued) while the call ran. Claude receives that result later, after the tool span has ended
+* A WebFetch or WebSearch call that Claude Code moved to the background while it ran so that a waiting message could reach Claude. The result that arrives later isn't recorded either. To learn when Claude Code moves a call, see [When Claude Code sends what you queued](/docs/en/interactive-mode#when-claude-code-sends-what-you-queued) for the terminal and the [`priority` field](/docs/en/agent-sdk/typescript#sdkusermessage) for Agent SDK sessions
 
 The event carries these attributes, each truncated at the content limit (60 KB by default). `Gated by` names the variable an attribute needs on top of `OTEL_LOG_TOOL_CONTENT=1`, and for Edit and Write that variable gates the event itself rather than the attribute.
 
@@ -717,7 +717,7 @@ For message-level reconstruction, each event class carries a key that matches a 
 
 #### User prompt event
 
-Logged when a user submits a prompt.
+Logged when a prompt is submitted, including on turns Claude Code starts on its own.
 
 **Event Name**: `claude_code.user_prompt`
 

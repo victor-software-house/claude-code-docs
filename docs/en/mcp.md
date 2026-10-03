@@ -304,6 +304,8 @@ If your request needs tools from a server that is still connecting in the backgr
 
 With tool search enabled, when a server finishes connecting while Claude is working, Claude Code lists the server's tool names to Claude on its next request in the same turn. Claude can then search for and call those tools without waiting for your next message.
 
+After you resume a session, Claude can call a tool from the saved conversation while the tool's MCP server is still connecting. While the server is on its first connection attempt, Claude Code holds the call for up to 10 seconds and runs it once the tool is available. If the server doesn't connect in time, or it is already [retrying after a failed attempt](#automatic-reconnection), the call fails with the `No such tool available` [tool error](/docs/en/errors#no-such-tool-available).
+
 ### Disable a server without removing it
 
 Toggle a server off in the `/mcp` panel to stop Claude Code from connecting to it without losing its configuration. Claude Code still lists the server in `/mcp`, marked as disabled.
@@ -331,7 +333,7 @@ In the sessions where it doesn't fetch feature flags, Claude Code uses the v2 ru
 
 On v2, Claude Code also:
 
-* Asks HTTP servers whether they support the newer revision, and uses it with those that do. It also asks claude.ai connector servers in sessions where it fetches feature flags. To have it ask stdio servers, or connector servers in every session, set [`MCP_PROTOCOL_NEGOTIATION`](/docs/en/env-vars) to `auto`. It connects to every other server as v1 does.
+* Asks HTTP servers whether they support the newer revision, and uses it with those that do. In sessions where it fetches feature flags, it also asks claude.ai connector servers, and on Claude Code v2.1.285 or later it asks stdio servers as Anthropic rolls that change out. To have it ask connector and stdio servers in every session, set [`MCP_PROTOCOL_NEGOTIATION`](/docs/en/env-vars) to `auto`. It connects to every other server as v1 does.
 * Receives `list_changed` notifications from servers on the newer revision over a [stream it holds open](#notification-streams-on-the-v2-runtime).
 * Doesn't register a [channel](#push-messages-with-channels) server that connects on the newer revision, because that revision can't carry channel messages.
 * Fails an [MCP OAuth sign-in](#authenticate-with-remote-mcp-servers) whose authorization response names an unexpected issuer.
@@ -343,7 +345,10 @@ To pick the runtime yourself, set [`MCP_SDK_GENERATION`](/docs/en/env-vars) to `
 
 ### Dynamic tool updates
 
-Claude Code supports MCP `list_changed` notifications, allowing MCP servers to dynamically update their available tools, prompts, and resources without requiring you to disconnect and reconnect. When an MCP server sends a `list_changed` notification, Claude Code automatically refreshes the available capabilities from that server.
+An MCP server can change the tools, prompts, or resources it offers while connected and send a `list_changed` notification. When one arrives:
+
+* **In an interactive terminal session**, Claude Code fetches the updated list from that server, so you don't need to reconnect it.
+* **In [non-interactive mode](/docs/en/headless) with the `-p` flag and in the [Agent SDK](/docs/en/agent-sdk/overview)**, Claude Code refreshes only the tool list on these notifications.
 
 If a refresh request fails, Claude Code keeps the server's previously discovered tools, prompts, and resources until a later refresh succeeds. Before v2.1.214, a transient error during the refresh replaced the server's tools, prompts, and resources with an empty list.
 
@@ -395,7 +400,9 @@ Whether Claude Code tells Claude about a configured server that failed to connec
 
 An MCP server can also push messages directly into your session so Claude can react to external events like CI results, monitoring alerts, or chat messages. To enable this, your server declares the `claude/channel` capability and you opt it in with the `--channels` flag at startup. See [Channels](/docs/en/channels) to use an officially supported channel, or [Channels reference](/docs/en/channels-reference) to build your own.
 
-On the [v2 runtime](#mcp-client-runtimes), if you set [`MCP_PROTOCOL_NEGOTIATION`](/docs/en/env-vars) to `auto` and a channel server negotiates MCP protocol revision 2026-07-28, it can't deliver channel messages, so Claude Code doesn't register it as a channel. Leaving the variable unset, or setting it to `legacy`, keeps stdio servers on the earlier handshake.
+On the [v2 runtime](#mcp-client-runtimes), a channel server that negotiates MCP protocol revision 2026-07-28 can't deliver channel messages, so Claude Code doesn't register it as a channel. A channel server that doesn't support that revision connects on the earlier handshake and registers as before.
+
+Claude Code asks stdio servers for that revision when you set [`MCP_PROTOCOL_NEGOTIATION`](/docs/en/env-vars) to `auto`. Anthropic is also turning that on by default, for Claude Code v2.1.285 or later, in sessions where Claude Code [fetches feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching). To keep a stdio channel server on the earlier handshake, set `MCP_PROTOCOL_NEGOTIATION` to `legacy`, which keeps every server on it.
 
 <Tip>
   Tips:
@@ -1360,8 +1367,6 @@ The following `tools/list` entry marks one tool as always requiring approval.
 }
 ```
 
-The `anthropic/requiresUserInteraction` annotation requires Claude Code v2.1.199 or later. Earlier versions ignore it and apply the standard permission flow.
-
 Some surfaces, such as [Remote Control](/docs/en/remote-control) and applications built on the [Agent SDK](/docs/en/agent-sdk/overview), normally let you approve tool calls with one tap. For a tool marked with this annotation, Claude Code withholds the one-tap action and shows the tool's full permission prompt instead, so approval still comes from a person answering the prompt rather than a tap.
 
 Claude Code withholds one-tap approval the same way for any permission request that only the terminal dialog can render in full, such as one that carries a safety warning or an always-allow option the remote surface can't show. You answer that request in the terminal dialog rather than from Remote Control. Requires Claude Code v2.1.214 or later.
@@ -1373,7 +1378,7 @@ MCP servers can request structured input from you mid-task using elicitation. Wh
 Servers can request input in two ways:
 
 * **Form mode**: Claude Code shows a dialog with form fields defined by the server (for example, a username and password prompt). Fill in the fields and submit.
-* **URL mode**: Claude Code asks whether to open a link in your browser and opens it when you accept. Servers use this mode for a flow that finishes outside the terminal, such as sign-in.
+* **URL mode**: Claude Code asks whether to open a link in your browser. Servers use this mode for a flow that finishes outside the terminal, such as sign-in.
 
 In URL mode, Claude Code passes the URL as a command-line argument to your system's URL handler, and caps how long that argument can be. When the URL, once escaped for the command line, is over that cap, you can only decline the request. Every character that needs escaping, such as `%` or `&`, counts four times toward the cap: its own character plus three escape characters. A URL with none of them reaches the cap at about 8,000 characters. A URL built largely of percent-escapes, where every third character is a `%`, reaches it at roughly 4,000.
 
