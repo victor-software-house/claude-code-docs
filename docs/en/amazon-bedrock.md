@@ -580,7 +580,9 @@ These variables are specific to the Mantle endpoint. See [Environment variables]
 
 ### Authentication loop with SSO and corporate proxies
 
-If browser tabs spawn repeatedly when using AWS SSO, remove the `awsAuthRefresh` setting from your [settings file](/docs/en/settings). This can occur when corporate VPNs or TLS inspection proxies interrupt the SSO browser flow. Claude Code treats the interrupted connection as an authentication failure, re-runs `awsAuthRefresh`, and loops indefinitely.
+If browser sign-in tabs keep opening when you use AWS SSO, remove the `awsAuthRefresh` setting from your [settings file](/docs/en/settings).
+
+The loop can occur when corporate VPNs or TLS inspection proxies interrupt the SSO browser flow. Claude Code treats the interrupted connection as an authentication failure. When a later request finds the credentials still expired, Claude Code re-runs `awsAuthRefresh`, which opens another tab.
 
 If your network environment interferes with automatic browser-based SSO flows, use `aws sso login` manually before starting Claude Code instead of relying on `awsAuthRefresh`.
 
@@ -617,7 +619,7 @@ Claude Code uses the Amazon Bedrock [Invoke API](https://docs.aws.amazon.com/bed
 
 Amazon Bedrock streams `InvokeModelWithResponseStream` responses in a binary event-stream format with the header `Content-Type: application/vnd.amazon.eventstream`. A gateway or proxy between Claude Code and Amazon Bedrock must forward the response body and its headers, including `Content-Type`, as Amazon Bedrock sent them.
 
-If the gateway rewrites `Content-Type` to another value, Claude Code rejects the response with an error that begins `Bedrock streaming response has content-type`, naming the value it received. The common rewrite is `text/event-stream`, from an integration that re-emits the stream as server-sent events.
+If the gateway rewrites `Content-Type` to another value, Claude Code rejects the response with an error that begins `Bedrock streaming response has content-type`, naming the value it received. The common rewrite is `text/event-stream`, from an integration that re-emits the stream as server-sent events. For the `CLAUDE_CODE_DISABLE_BEDROCK_CONTENT_TYPE_GUARD` variable that the error message names, see [Bedrock streaming response has an unexpected content-type](/docs/en/errors#bedrock-streaming-response-has-an-unexpected-content-type).
 
 If the gateway drops or blanks the header instead, Claude Code assumes the body is Amazon Bedrock's event stream and decodes it, so a body the gateway passed through unmodified keeps streaming.
 

@@ -34,7 +34,7 @@ export const ClaudeExplorer = () => {
         oneLiner: 'Project instructions Claude reads every session',
         when: 'Loaded into context at the start of every session',
         description: 'Project-specific instructions that shape how Claude works in this repository. Put your conventions, common commands, and architectural context here so Claude operates with the same assumptions your team does.',
-        tips: ['Target under 200 lines. Longer files still load in full but may reduce adherence', <>CLAUDE.md loads into every session. If something only matters for specific tasks, move it to a <A href="/docs/en/skills">skill</A> or a path-scoped <A href="/docs/en/memory#organize-rules-with-claude/rules/">rule</A> so it loads only when needed</>, 'List the commands you run most, like build, test, and format, so Claude knows them without you spelling them out each time', <>Run <C>/memory</C> to open and edit CLAUDE.md from within a session</>, <>Also works at <C>.claude/CLAUDE.md</C> if you prefer to keep the project root clean</>, <>If your repo already has an <C>AGENTS.md</C> for other coding agents, Claude Code <A href="/docs/en/memory#agents-md">can read that</A> on its own or alongside CLAUDE.md</>],
+        tips: ['Target under 200 lines. Longer files still load in full but may reduce adherence', <>CLAUDE.md loads into every session. If something only matters for specific tasks, move it to a <A href="/docs/en/skills">skill</A> or a path-scoped <A href="/docs/en/memory#organize-rules-with-claude/rules/">rule</A> so it loads only when needed</>, 'List the commands you run most, like build, test, and format, so Claude knows them without you spelling them out each time', <>Run <C>/memory</C> to open and edit CLAUDE.md from within a session</>, <>Also works at <C>.claude/CLAUDE.md</C> if you prefer to keep the project root clean</>, <>If your repo already has an <C>AGENTS.md</C> for other coding agents, Claude Code <A href="/docs/en/memory#agents-md">can read that</A> in place of a <C>CLAUDE.md</C></>],
         exampleIntro: 'This example is for a TypeScript and React project. It lists the build and test commands, the framework conventions Claude should follow, and project-specific rules like export style and file layout.',
         example: `# Project conventions
 
@@ -1434,7 +1434,7 @@ Claude Code reads instructions, settings, skills, subagents, and memory from you
 
 On Windows, `~/.claude` resolves to `%USERPROFILE%\.claude`. If you set [`CLAUDE_CONFIG_DIR`](/docs/en/env-vars), every `~/.claude` path on this page lives under that directory instead.
 
-Most users only edit `CLAUDE.md` and `settings.json`. If your repository already has an `AGENTS.md` for other coding agents, Claude Code [can read that](/docs/en/memory#agents-md) on its own or alongside `CLAUDE.md`. The rest of the directory is optional: add skills, rules, or subagents as you need them.
+Most users only edit `CLAUDE.md` and `settings.json`. If your repository already has an `AGENTS.md` for other coding agents, Claude Code [can read that](/docs/en/memory#agents-md) in place of a `CLAUDE.md`. The rest of the directory is optional: add skills, rules, or subagents as you need them.
 
 ## Explore the directory
 
@@ -1450,7 +1450,7 @@ The explorer covers files you author and edit. A few related files live elsewher
 | - | - | - |
 | `managed-settings.json` | System-level, varies by OS | Enterprise-enforced settings that you can't override, apart from [narrow exceptions](/docs/en/settings#security-keys-where-the-stricter-value-applies). See [where to save the file](/docs/en/managed-settings#deploy-a-managed-settings-file) and [which managed source Claude Code uses](/docs/en/managed-settings#precedence-within-the-managed-tier). |
 | `CLAUDE.local.md` | Project root | Your private preferences for this project, loaded alongside CLAUDE.md. Create it manually and add it to `.gitignore`. |
-| `AGENTS.md` | Project root, `.claude/`, or any directory | Project instructions you write for AI coding agents. Claude Code can [load it](/docs/en/memory#agents-md) on its own or alongside `CLAUDE.md`. |
+| `AGENTS.md` | Project root, `.claude/`, or any directory | Project instructions you write for AI coding agents. Claude Code can [load it](/docs/en/memory#agents-md) in place of a `CLAUDE.md`. |
 | Installed plugins | `~/.claude/plugins` | Cloned marketplaces, installed plugin versions, the `installed_plugins.json` install record, and per-plugin data, managed by `claude plugin` commands. Plugins [synced from your claude.ai account](/docs/en/plugins/loading#synced-plugins) download into `~/.claude/plugins/synced/`. For a plugin installed from a marketplace [`command` source](/docs/en/plugins/marketplace-reference#command-plugin-source) in link mode, Claude Code stores links here instead of a copy, and the plugin's files stay in the directory the command prints. A `command` source requires Claude Code v2.1.229 or later. A plugin listed by relative path in a marketplace you added from a local path also [loads in place](/docs/en/plugins/loading#find-plugins-on-disk) from its source directory rather than from a cache copy. See [plugin caching](/docs/en/plugins/loading#find-plugins-on-disk) for how orphaned versions are cleaned up. |
 
 `~/.claude` also holds data Claude Code writes as you work: transcripts, prompt history, file snapshots, caches, and logs. See [application data](#application-data) below.
@@ -1573,6 +1573,8 @@ Claude Code skips the age-based sweep in these cases:
 * **Bare mode**: when you run `claude -p` with [`--bare`](/docs/en/headless#start-faster-with-bare-mode), Claude Code doesn't run the sweep in that session.
 * **Paused sweep**: if Claude Code can't safely determine the retention period, it pauses the retention cleanup sweep; the [`retention_sweep` event](/docs/en/monitoring-usage#retention-sweep-event) lists each configuration that pauses it. When the cause is a settings file that can't be read or parsed, or settings errors with `cleanupPeriodDays` or `desktopSessionCleanupPeriodDays` explicitly set, Claude Code also shows a warning in `/status` until you fix the settings errors. When [managed settings](/docs/en/server-managed-settings) provide `cleanupPeriodDays`, Claude Code runs the sweep at the managed value in either case.
 
+To check that the machines in your organization run the sweep with the retention period you set, see [Check the retention sweep](/docs/en/monitoring-usage#check-the-retention-sweep).
+
 ### Session scratchpad directory
 
 The scratchpad is a per-session directory that Claude Code gives Claude for temporary files: intermediate results, helper scripts, and drafts that don't belong in your project. When Claude says it saved something "to the scratchpad", the file is there. Claude uses it instead of `/tmp`, and can create, edit, and read files in it without a permission prompt.
@@ -1682,7 +1684,9 @@ claude purge ~/work/my-repo --yes
 
 Pass `--all` instead of a path to purge state for every project at once, which deletes `history.jsonl` outright rather than filtering it. Pass `-i` to step through the deletion plan one item at a time.
 
-The command leaves `shell-snapshots/` and `backups/` alone because those are not project-scoped, and warns about them in the plan output.
+In a script, check the output rather than the exit status alone. A run that deletes everything in its plan ends with `Purged N item(s)`. Treat that line as the sign of success.
+
+The command leaves `shell-snapshots/` and `backups/` alone because those are not project-scoped, and warns about them in the plan output. If anyone ran [`/heapdump`](/docs/en/troubleshooting#high-cpu-or-memory-usage) on the machine, delete the `.heapsnapshot` files it wrote too. A heap snapshot contains the full conversation and any credentials the process held, and neither the retention sweep nor the purge touches it.
 
 You can also delete any of the application-data paths above by hand, apart from the [state files to keep](#state-files-to-keep). New sessions are unaffected. The table below shows what you lose for past sessions.
 

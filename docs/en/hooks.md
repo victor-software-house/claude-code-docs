@@ -61,7 +61,7 @@ The table below summarizes when each event fires. The [Hook events](#hook-events
 | `DirectoryAdded` | When a working directory is added mid-session via `/add-dir` or the SDK `register_repo_root` control request |
 | `FileChanged` | When a watched file changes on disk. The `matcher` field specifies which filenames to watch |
 | `WorktreeCreate` | When a worktree is being created via `--worktree`, `isolation: "worktree"`, or for a background session. Replaces default git behavior |
-| `WorktreeRemove` | When a worktree is being removed at session exit, when a subagent finishes, or when you delete a background session |
+| `WorktreeRemove` | When a worktree that a `WorktreeCreate` hook created is being removed |
 | `PreCompact` | Before context compaction |
 | `PostCompact` | After context compaction completes |
 | `PreModelSwitch` | Before Claude Code applies a model switch that you or a client requested. Can block the switch |
@@ -1389,7 +1389,7 @@ A hook that blocks by exiting 2 routes the same way as `reason`: the block messa
 
 #### What a blocked prompt leaves behind
 
-A blocked prompt never reaches Claude, but its text isn't removed everywhere. By default the block message shown to the user ends with `Original prompt:` followed by the submitted text, and Claude Code writes that message to the session's transcript file on disk. To leave the text out of the message, print JSON with `"suppressOriginalPrompt": true` inside `hookSpecificOutput`. This works whether the hook blocks with `decision: "block"` or by exiting 2. An exit-2 hook that prints no JSON always gets the prompt text in its block message.
+A blocked prompt never reaches Claude, but its text isn't removed everywhere. By default the block message shown to the user ends with `Original prompt:` followed by the submitted text, and Claude Code writes that message to the session's transcript file on disk. To leave the text out of the message, print JSON with `"suppressOriginalPrompt": true` inside `hookSpecificOutput`. This works whether the hook blocks with `decision: "block"` or by exiting 2.
 
 `suppressOriginalPrompt` changes only the block message. The submitted text can still appear in local files such as the session transcript and your prompt history, so a blocking hook isn't a way to keep a secret off disk. To limit or remove those files, see [Plaintext storage](/docs/en/claude-directory#plaintext-storage) and [Clear local data](/docs/en/claude-directory#clear-local-data).
 
@@ -3030,11 +3030,10 @@ Claude Code refuses an absolute path that contains `.` or `..` segments, and any
 
 ### WorktreeRemove
 
-Runs when a worktree is being removed. This is the cleanup counterpart to [WorktreeCreate](#worktreecreate). The event fires when:
+Runs when Claude Code cleans up a worktree that your [`WorktreeCreate`](#worktreecreate) hook created. The event fires when:
 
-* you exit a `--worktree` session and choose to remove it
-* a subagent with `isolation: "worktree"` finishes
-* you delete a [background session](/docs/en/agent-view#what-deleting-a-session-removes) whose worktree the hook created
+* You exit a `--worktree` session and choose to remove the worktree
+* You delete a [background session](/docs/en/agent-view#what-deleting-a-session-removes) that runs in the worktree
 
 For git-based worktrees, Claude Code handles cleanup automatically with `git worktree remove`. If you configured a WorktreeCreate hook, pair it with a WorktreeRemove hook to control cleanup of the worktrees it creates:
 
