@@ -68,6 +68,7 @@ You can start a Remote Control session from the CLI, the [Claude Desktop app](/d
     | `-d`, `--debug[=<filter>]` | Turn on debug logging for the server, optionally filtered by category. Pass a filter only in the `=` form, such as `--debug=api,hooks`. Requires Claude Code v2.1.282 or later. |
     | `--debug-file <path>` | Write debug logs to the given file. |
     | `--verbose` | Show detailed connection and session logs. |
+    | `--sandbox`, `--no-sandbox` | Removed in v2.1.300. If you pass either flag, the server [exits with an error](/docs/en/errors#sandbox-is-not-supported-by-claude-remote-control) instead of starting. |
 
     If you pass a global `claude` flag before `remote-control`, or a wrapper script adds one, Claude Code doesn't carry the flag over to the sessions the server creates. Claude Code lets the flag through only when dropping it is known not to change what those sessions can do, such as `--verbose` or `--model`. For any other flag, such as `--settings`, Claude Code [refuses to start](/docs/en/errors#not-carried-over-to-the-sessions-remote-control-starts) and names the flag to remove.
 
@@ -243,7 +244,7 @@ When the setting is on, interacting with a Remote Control session requires both 
 
 Biometric checks run on the device through the operating system or browser, the same mechanism as passkey sign-in. Anthropic never receives or stores fingerprints, face data, or any other biometric information. Only the device's public key and basic metadata such as display name, platform, and enrollment time are stored.
 
-The setting applies to Remote Control in both Claude Code and [Cowork](https://claude.com/docs/cowork/overview). This page covers the Claude Code side. Regular Claude chat, Claude Code in the terminal, and API usage are unaffected.
+The setting applies to Remote Control in Claude Code and to Computer access in [Cowork](https://claude.com/docs/cowork/overview). This page covers the Claude Code side. Regular Claude chat, Claude Code in the terminal, and API usage are unaffected.
 
 <h3 id="enable-trusted-devices-for-your-organization">
   Enable Trusted Devices for a Team or Enterprise organization
