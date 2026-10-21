@@ -6,9 +6,9 @@
 
 > Pair your main model with a stronger advisor model that Claude consults at key moments during a task.
 
-<Note>
-  The advisor tool is experimental and requires the Anthropic API. It is not available on Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, or Microsoft Foundry. Behavior, pricing, and availability may change.
-</Note>
+> [!NOTE]
+>
+> The advisor tool is experimental and requires the Anthropic API. It is not available on Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, or Microsoft Foundry. Behavior, pricing, and availability may change.
 
 The advisor tool lets Claude consult a second, typically stronger model at key moments during a task, such as before committing to an approach, when stuck on a recurring error, or before declaring a task complete. The advisor receives the full conversation, including every tool call and result, and returns guidance that Claude applies before continuing.
 
@@ -83,7 +83,7 @@ Claude Code uses the flag instead of the `advisorModel` setting for that session
 
 If you start a [background session](/docs/en/agent-view) with `--advisor` and one of these applies, Claude Code starts the session without the advisor instead of exiting.
 
-If the requested model can act as an advisor but [ranks below](#choose-an-advisor-model) the session's main model, Claude Code starts the session anyway. Outside background sessions, it also warns at launch that the model `cannot advise` the main model.
+If the model you pass can act as an advisor but [ranks below your main model](#choose-an-advisor-model), the session starts whether or not it's a background session. Your main model then runs without the advisor.
 
 ## Choose an advisor model
 

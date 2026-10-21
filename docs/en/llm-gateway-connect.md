@@ -10,31 +10,29 @@ An [LLM gateway](/docs/en/llm-gateway) is a proxy your organization runs between
 
 This page is for developers running Claude Code through a gateway their organization operates. It covers two paths: [checking whether your administrator already configured it for you](#check-for-an-existing-configuration), and [configuring it yourself](#configure-claude-code-yourself) when they haven't.
 
-<Note>
-  * To deploy a gateway for your organization, see [Roll out an LLM gateway](/docs/en/llm-gateway-rollout)
-  * For what Claude Code sends to a gateway, see the [gateway compatibility guide](/docs/en/llm-gateway-protocol)
-</Note>
+> [!NOTE]
+>
+> * To deploy a gateway for your organization, see [Roll out an LLM gateway](/docs/en/llm-gateway-rollout)
+> * For what Claude Code sends to a gateway, see the [gateway compatibility guide](/docs/en/llm-gateway-protocol)
 
 ## Check for an existing configuration
 
 Administrators can distribute the gateway address and credential through [managed settings](/docs/en/managed-settings), device management, or an [`apiKeyHelper`](#rotate-credentials-with-apikeyhelper), so Claude Code picks them up at startup with nothing for you to set. To check whether your organization already did this:
 
-<Steps>
-  <Step title="Start Claude Code">
-    Run `claude`. If it opens to the login screen instead of a session, no gateway credential was distributed; [configure it yourself](#configure-claude-code-yourself) below.
-  </Step>
+**1. Start Claude Code**
 
-  <Step title="Check the Status tab">
-    If Claude Code started a session without showing the login screen, run `/status`, which opens on the **Status** tab, and check two lines:
+Run `claude`. If it opens to the login screen instead of a session, no gateway credential was distributed; [configure it yourself](#configure-claude-code-yourself) below.
 
-    * `Anthropic base URL`: this line only appears when a gateway address is set. If it isn't there, Claude Code isn't pointed at the gateway; [configure it yourself](#configure-claude-code-yourself) below.
-    * `Auth token` or `API key`: a line naming `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, or an `apiKeyHelper` confirms a gateway credential is active. A `Login method` line naming a claude.ai account instead means the credential wasn't distributed; [set it yourself](#set-the-credential-variable).
-  </Step>
+**2. Check the Status tab**
 
-  <Step title="Send a test message">
-    Close the `/status` menu and send any prompt in Claude Code. A normal response from Claude, with no error, confirms the gateway connection works.
-  </Step>
-</Steps>
+If Claude Code started a session without showing the login screen, run `/status`, which opens on the **Status** tab, and check two lines:
+
+* `Anthropic base URL`: this line only appears when a gateway address is set. If it isn't there, Claude Code isn't pointed at the gateway; [configure it yourself](#configure-claude-code-yourself) below.
+* `Auth token` or `API key`: a line naming `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, or an `apiKeyHelper` confirms a gateway credential is active. A `Login method` line naming a claude.ai account instead means the credential wasn't distributed; [set it yourself](#set-the-credential-variable).
+
+**3. Send a test message**
+
+Close the `/status` menu and send any prompt in Claude Code. A normal response from Claude, with no error, confirms the gateway connection works.
 
 If both lines in the `/status` menu look right but the message to Claude fails, see the [troubleshooting table](#troubleshoot-gateway-errors).
 
@@ -75,21 +73,19 @@ For your first connection, start with shell exports and run the [verification re
 
 Replace the values with the ones your gateway team gave you:
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    ```bash theme={null}
-    export ANTHROPIC_BASE_URL=https://llm-gateway.example.com
-    export ANTHROPIC_AUTH_TOKEN=sk-gateway-key
-    ```
-  </Tab>
+**Bash or Zsh**
 
-  <Tab title="PowerShell">
-    ```powershell theme={null}
-    $env:ANTHROPIC_BASE_URL = "https://llm-gateway.example.com"
-    $env:ANTHROPIC_AUTH_TOKEN = "sk-gateway-key"
-    ```
-  </Tab>
-</Tabs>
+```bash theme={null}
+export ANTHROPIC_BASE_URL=https://llm-gateway.example.com
+export ANTHROPIC_AUTH_TOKEN=sk-gateway-key
+```
+
+**PowerShell**
+
+```powershell theme={null}
+$env:ANTHROPIC_BASE_URL = "https://llm-gateway.example.com"
+$env:ANTHROPIC_AUTH_TOKEN = "sk-gateway-key"
+```
 
 Shell exports apply only to that terminal session and programs started from it. An editor launched from the dock or Start menu won't see them. To make the values persist across new terminals, add the same lines to your shell profile, such as `~/.zshrc`, `~/.bashrc`, or your PowerShell `$PROFILE`.
 
@@ -102,9 +98,9 @@ To make the configuration apply everywhere Claude Code runs, including [backgrou
 * `~/.claude/settings.json` applies to all your projects. On Windows the path is `%USERPROFILE%\.claude\settings.json`
 * `.claude/settings.local.json` applies to one project. Claude Code adds it to your global gitignore when it saves a setting there; if you create it by hand or have Claude write it, add it to your gitignore yourself first so you don't accidentally commit your credential
 
-<Warning>
-  Don't put the credential in a project's `.claude/settings.json`. That file is committed and shared with everyone who clones the repository.
-</Warning>
+> [!WARNING]
+>
+> Don't put the credential in a project's `.claude/settings.json`. That file is committed and shared with everyone who clones the repository.
 
 The `env` block looks the same in either file:
 
@@ -123,26 +119,24 @@ When both a shell export and a settings-file `env` block set the same variable, 
 
 With the variables exported in your shell, send a one-token request to the gateway directly. This confirms the URL and credential work before you open Claude Code, so a failure points at the gateway rather than your configuration. The commands below read the shell variables, so they need the [shell exports](#set-as-shell-environment-variables) even if you also put the values in a settings file.
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    ```bash theme={null}
-    curl -sS -w '\n%{http_code}\n' -X POST "$ANTHROPIC_BASE_URL/v1/messages" \
-      -H "Authorization: Bearer $ANTHROPIC_AUTH_TOKEN" \
-      -H "anthropic-version: 2023-06-01" \
-      -H "content-type: application/json" \
-      -d '{"model": "claude-sonnet-4-6", "max_tokens": 1, "messages": [{"role": "user", "content": "."}]}'
-    ```
-  </Tab>
+**Bash or Zsh**
 
-  <Tab title="PowerShell">
-    ```powershell theme={null}
-    Invoke-RestMethod -Method Post -Uri "$env:ANTHROPIC_BASE_URL/v1/messages" `
-      -Headers @{ "Authorization" = "Bearer $env:ANTHROPIC_AUTH_TOKEN"; "anthropic-version" = "2023-06-01" } `
-      -ContentType "application/json" `
-      -Body '{"model": "claude-sonnet-4-6", "max_tokens": 1, "messages": [{"role": "user", "content": "."}]}'
-    ```
-  </Tab>
-</Tabs>
+```bash theme={null}
+curl -sS -w '\n%{http_code}\n' -X POST "$ANTHROPIC_BASE_URL/v1/messages" \
+  -H "Authorization: Bearer $ANTHROPIC_AUTH_TOKEN" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{"model": "claude-sonnet-4-6", "max_tokens": 1, "messages": [{"role": "user", "content": "."}]}'
+```
+
+**PowerShell**
+
+```powershell theme={null}
+Invoke-RestMethod -Method Post -Uri "$env:ANTHROPIC_BASE_URL/v1/messages" `
+  -Headers @{ "Authorization" = "Bearer $env:ANTHROPIC_AUTH_TOKEN"; "anthropic-version" = "2023-06-01" } `
+  -ContentType "application/json" `
+  -Body '{"model": "claude-sonnet-4-6", "max_tokens": 1, "messages": [{"role": "user", "content": "."}]}'
+```
 
 If your gateway expects keys in the `x-api-key` header, replace the `Authorization` header with `x-api-key: $ANTHROPIC_API_KEY` in the Bash command, or the `"Authorization"` hashtable entry with `"x-api-key" = "$env:ANTHROPIC_API_KEY"` in the PowerShell command.
 
@@ -239,29 +233,27 @@ The [Agent SDK](/docs/en/agent-sdk/overview) has no gateway-specific options; it
 * TypeScript: the spawned process inherits the parent environment by default, but setting `options.env` replaces the environment entirely. Spread `process.env` into it to keep your gateway variables.
 * Python: `ClaudeAgentOptions(env=...)` merges on top of the inherited environment, so gateway variables set in the parent process carry through without spreading.
 
-<CodeGroup>
-  ```ts TypeScript theme={null}
-  const result = query({
-    prompt: "...",
-    options: {
-      env: {
-        ...process.env,
-        ANTHROPIC_BASE_URL: "https://llm-gateway.example.com",
-        ANTHROPIC_AUTH_TOKEN: process.env.GATEWAY_KEY,
-      },
+```ts TypeScript theme={null}
+const result = query({
+  prompt: "...",
+  options: {
+    env: {
+      ...process.env,
+      ANTHROPIC_BASE_URL: "https://llm-gateway.example.com",
+      ANTHROPIC_AUTH_TOKEN: process.env.GATEWAY_KEY,
     },
-  })
-  ```
+  },
+})
+```
 
-  ```python Python theme={null}
-  options = ClaudeAgentOptions(
-      env={
-          "ANTHROPIC_BASE_URL": "https://llm-gateway.example.com",
-          "ANTHROPIC_AUTH_TOKEN": os.environ["GATEWAY_KEY"],
-      }
-  )
-  ```
-</CodeGroup>
+```python Python theme={null}
+options = ClaudeAgentOptions(
+    env={
+        "ANTHROPIC_BASE_URL": "https://llm-gateway.example.com",
+        "ANTHROPIC_AUTH_TOKEN": os.environ["GATEWAY_KEY"],
+    }
+)
+```
 
 ### Slack, cloud sessions, and Remote Control
 
@@ -282,19 +274,17 @@ These settings cover cases beyond the base URL and credential. Set them only if 
 
 Some gateways route or tag requests using a custom header in addition to the credential, for example a tenant identifier or a routing key. To send one, set [`ANTHROPIC_CUSTOM_HEADERS`](/docs/en/env-vars) with one `Name: Value` pair per line. The example below adds a routing header named `X-Org-Route`:
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    ```bash theme={null}
-    export ANTHROPIC_CUSTOM_HEADERS="X-Org-Route: prod"
-    ```
-  </Tab>
+**Bash or Zsh**
 
-  <Tab title="PowerShell">
-    ```powershell theme={null}
-    $env:ANTHROPIC_CUSTOM_HEADERS = "X-Org-Route: prod"
-    ```
-  </Tab>
-</Tabs>
+```bash theme={null}
+export ANTHROPIC_CUSTOM_HEADERS="X-Org-Route: prod"
+```
+
+**PowerShell**
+
+```powershell theme={null}
+$env:ANTHROPIC_CUSTOM_HEADERS = "X-Org-Route: prod"
+```
 
 You can also set `ANTHROPIC_CUSTOM_HEADERS` in the `env` block of a settings file. Use `\n` between pairs there, since JSON strings can't span multiple lines:
 
@@ -328,40 +318,38 @@ Use a helper when the credential expires on a schedule, comes from a vault or SS
 
 The helper is any shell command that prints the current credential to stdout. Claude Code runs it through your system shell, so on Windows it can be an executable or a PowerShell invocation. Make the command print nothing but the credential. On Claude Code v2.1.227 or later, a banner or a log line printed alongside the key makes the [helper fail](/docs/en/errors#your-apikeyhelper-script-is-failing). Write the script, make it executable, and reference it from `apiKeyHelper` in your [settings file](/docs/en/settings):
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    For example, a script that reads from a vault:
+**Bash or Zsh**
 
-    ```bash theme={null}
-    #!/bin/bash
-    vault kv get -field=api_key secret/llm-gateway/claude-code
-    ```
+For example, a script that reads from a vault:
 
-    Reference its path in `~/.claude/settings.json`:
+```bash theme={null}
+#!/bin/bash
+vault kv get -field=api_key secret/llm-gateway/claude-code
+```
 
-    ```json theme={null}
-    {
-      "apiKeyHelper": "~/bin/get-gateway-key.sh"
-    }
-    ```
-  </Tab>
+Reference its path in `~/.claude/settings.json`:
 
-  <Tab title="PowerShell">
-    For example, a script that reads from a vault:
+```json theme={null}
+{
+  "apiKeyHelper": "~/bin/get-gateway-key.sh"
+}
+```
 
-    ```powershell theme={null}
-    vault kv get -field=api_key secret/llm-gateway/claude-code
-    ```
+**PowerShell**
 
-    Reference the PowerShell invocation in `%USERPROFILE%\.claude\settings.json`, escaping the backslashes in the JSON string:
+For example, a script that reads from a vault:
 
-    ```json theme={null}
-    {
-      "apiKeyHelper": "powershell -NoProfile -File C:\\scripts\\get-gateway-key.ps1"
-    }
-    ```
-  </Tab>
-</Tabs>
+```powershell theme={null}
+vault kv get -field=api_key secret/llm-gateway/claude-code
+```
+
+Reference the PowerShell invocation in `%USERPROFILE%\.claude\settings.json`, escaping the backslashes in the JSON string:
+
+```json theme={null}
+{
+  "apiKeyHelper": "powershell -NoProfile -File C:\\scripts\\get-gateway-key.ps1"
+}
+```
 
 Claude Code caches the helper's output for five minutes by default and re-runs the helper after the cache lifetime elapses. To change the lifetime, set `CLAUDE_CODE_API_KEY_HELPER_TTL_MS` in milliseconds, for example `CLAUDE_CODE_API_KEY_HELPER_TTL_MS=900000` for 15 minutes.
 
@@ -377,19 +365,17 @@ Claude Code attaches a credential to a telemetry or usage-metrics request only w
 
 To turn that traffic off, set `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` alongside the gateway variables, in the same shell exports or settings-file `env` block:
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    ```bash theme={null}
-    export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-    ```
-  </Tab>
+**Bash or Zsh**
 
-  <Tab title="PowerShell">
-    ```powershell theme={null}
-    $env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"
-    ```
-  </Tab>
-</Tabs>
+```bash theme={null}
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+```
+
+**PowerShell**
+
+```powershell theme={null}
+$env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1"
+```
 
 Setting the variable has these effects and limits:
 
@@ -414,49 +400,45 @@ Set the block for the provider your gateway team named. The skip-auth variables 
 
 Leave `AWS_BEARER_TOKEN_BEDROCK` unset when the gateway issues its own credential. If you set it, Claude Code sends that [Amazon Bedrock API key](/docs/en/amazon-bedrock#2-configure-aws-credentials) as the `Authorization` header instead of your gateway token, even with `CLAUDE_CODE_SKIP_BEDROCK_AUTH` set.
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    ```bash theme={null}
-    export ANTHROPIC_BEDROCK_BASE_URL=https://llm-gateway.example.com/bedrock
-    export CLAUDE_CODE_SKIP_BEDROCK_AUTH=1
-    export CLAUDE_CODE_USE_BEDROCK=1
-    ```
-  </Tab>
+**Bash or Zsh**
 
-  <Tab title="PowerShell">
-    ```powershell theme={null}
-    $env:ANTHROPIC_BEDROCK_BASE_URL = "https://llm-gateway.example.com/bedrock"
-    $env:CLAUDE_CODE_SKIP_BEDROCK_AUTH = "1"
-    $env:CLAUDE_CODE_USE_BEDROCK = "1"
-    ```
-  </Tab>
-</Tabs>
+```bash theme={null}
+export ANTHROPIC_BEDROCK_BASE_URL=https://llm-gateway.example.com/bedrock
+export CLAUDE_CODE_SKIP_BEDROCK_AUTH=1
+export CLAUDE_CODE_USE_BEDROCK=1
+```
+
+**PowerShell**
+
+```powershell theme={null}
+$env:ANTHROPIC_BEDROCK_BASE_URL = "https://llm-gateway.example.com/bedrock"
+$env:CLAUDE_CODE_SKIP_BEDROCK_AUTH = "1"
+$env:CLAUDE_CODE_USE_BEDROCK = "1"
+```
 
 #### Google Cloud's Agent Platform
 
 Replace the project ID and region with your own values. Claude Code includes both in the path of each request it sends to the gateway:
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    ```bash theme={null}
-    export ANTHROPIC_VERTEX_BASE_URL=https://llm-gateway.example.com/vertex
-    export ANTHROPIC_VERTEX_PROJECT_ID=your-gcp-project-id
-    export CLAUDE_CODE_SKIP_VERTEX_AUTH=1
-    export CLAUDE_CODE_USE_VERTEX=1
-    export CLOUD_ML_REGION=us-east5
-    ```
-  </Tab>
+**Bash or Zsh**
 
-  <Tab title="PowerShell">
-    ```powershell theme={null}
-    $env:ANTHROPIC_VERTEX_BASE_URL = "https://llm-gateway.example.com/vertex"
-    $env:ANTHROPIC_VERTEX_PROJECT_ID = "your-gcp-project-id"
-    $env:CLAUDE_CODE_SKIP_VERTEX_AUTH = "1"
-    $env:CLAUDE_CODE_USE_VERTEX = "1"
-    $env:CLOUD_ML_REGION = "us-east5"
-    ```
-  </Tab>
-</Tabs>
+```bash theme={null}
+export ANTHROPIC_VERTEX_BASE_URL=https://llm-gateway.example.com/vertex
+export ANTHROPIC_VERTEX_PROJECT_ID=your-gcp-project-id
+export CLAUDE_CODE_SKIP_VERTEX_AUTH=1
+export CLAUDE_CODE_USE_VERTEX=1
+export CLOUD_ML_REGION=us-east5
+```
+
+**PowerShell**
+
+```powershell theme={null}
+$env:ANTHROPIC_VERTEX_BASE_URL = "https://llm-gateway.example.com/vertex"
+$env:ANTHROPIC_VERTEX_PROJECT_ID = "your-gcp-project-id"
+$env:CLAUDE_CODE_SKIP_VERTEX_AUTH = "1"
+$env:CLAUDE_CODE_USE_VERTEX = "1"
+$env:CLOUD_ML_REGION = "us-east5"
+```
 
 The block covers routing and authentication. The region overrides and model pins from the [Agent Platform setup](/docs/en/google-vertex-ai#4-configure-claude-code) apply through a gateway as well:
 
@@ -470,47 +452,43 @@ Put the gateway's credential in `ANTHROPIC_FOUNDRY_API_KEY`; it is sent to the g
 
 For a gateway that injects its own `Authorization` header, set `CLAUDE_CODE_SKIP_FOUNDRY_AUTH=1` and leave both credential variables unset. Claude Code then sends requests without an Azure credential and preserves the `Authorization` header you supply, for example through `ANTHROPIC_CUSTOM_HEADERS`.
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    ```bash theme={null}
-    export ANTHROPIC_FOUNDRY_BASE_URL=https://llm-gateway.example.com/foundry
-    export ANTHROPIC_FOUNDRY_API_KEY=sk-gateway-key
-    export CLAUDE_CODE_USE_FOUNDRY=1
-    ```
-  </Tab>
+**Bash or Zsh**
 
-  <Tab title="PowerShell">
-    ```powershell theme={null}
-    $env:ANTHROPIC_FOUNDRY_BASE_URL = "https://llm-gateway.example.com/foundry"
-    $env:ANTHROPIC_FOUNDRY_API_KEY = "sk-gateway-key"
-    $env:CLAUDE_CODE_USE_FOUNDRY = "1"
-    ```
-  </Tab>
-</Tabs>
+```bash theme={null}
+export ANTHROPIC_FOUNDRY_BASE_URL=https://llm-gateway.example.com/foundry
+export ANTHROPIC_FOUNDRY_API_KEY=sk-gateway-key
+export CLAUDE_CODE_USE_FOUNDRY=1
+```
+
+**PowerShell**
+
+```powershell theme={null}
+$env:ANTHROPIC_FOUNDRY_BASE_URL = "https://llm-gateway.example.com/foundry"
+$env:ANTHROPIC_FOUNDRY_API_KEY = "sk-gateway-key"
+$env:CLAUDE_CODE_USE_FOUNDRY = "1"
+```
 
 #### Claude Platform on AWS
 
 See [Claude Platform on AWS](/docs/en/claude-platform-on-aws) for the workspace ID.
 
-<Tabs>
-  <Tab title="Bash or Zsh">
-    ```bash theme={null}
-    export ANTHROPIC_AWS_BASE_URL=https://llm-gateway.example.com/anthropic-aws
-    export ANTHROPIC_AWS_WORKSPACE_ID=wrkspc_01ABCDEFGHIJKLMN
-    export CLAUDE_CODE_SKIP_ANTHROPIC_AWS_AUTH=1
-    export CLAUDE_CODE_USE_ANTHROPIC_AWS=1
-    ```
-  </Tab>
+**Bash or Zsh**
 
-  <Tab title="PowerShell">
-    ```powershell theme={null}
-    $env:ANTHROPIC_AWS_BASE_URL = "https://llm-gateway.example.com/anthropic-aws"
-    $env:ANTHROPIC_AWS_WORKSPACE_ID = "wrkspc_01ABCDEFGHIJKLMN"
-    $env:CLAUDE_CODE_SKIP_ANTHROPIC_AWS_AUTH = "1"
-    $env:CLAUDE_CODE_USE_ANTHROPIC_AWS = "1"
-    ```
-  </Tab>
-</Tabs>
+```bash theme={null}
+export ANTHROPIC_AWS_BASE_URL=https://llm-gateway.example.com/anthropic-aws
+export ANTHROPIC_AWS_WORKSPACE_ID=wrkspc_01ABCDEFGHIJKLMN
+export CLAUDE_CODE_SKIP_ANTHROPIC_AWS_AUTH=1
+export CLAUDE_CODE_USE_ANTHROPIC_AWS=1
+```
+
+**PowerShell**
+
+```powershell theme={null}
+$env:ANTHROPIC_AWS_BASE_URL = "https://llm-gateway.example.com/anthropic-aws"
+$env:ANTHROPIC_AWS_WORKSPACE_ID = "wrkspc_01ABCDEFGHIJKLMN"
+$env:CLAUDE_CODE_SKIP_ANTHROPIC_AWS_AUTH = "1"
+$env:CLAUDE_CODE_USE_ANTHROPIC_AWS = "1"
+```
 
 #### Confirm the provider route
 
@@ -535,7 +513,7 @@ These are the most common errors when running Claude Code through a gateway, wit
 | `Your apiKeyHelper script is failing`, or `apiKeyHelper failed:` on stderr in non-interactive mode | The command in the [`apiKeyHelper`](/docs/en/settings-reference#apikeyhelper) setting didn't produce a usable key, so requests carry a placeholder key | Run the command directly to see why it fails, and re-authenticate with your credential provider if it reports an expired session; see [the error reference](/docs/en/errors#your-apikeyhelper-script-is-failing) |
 | `Connection refused — a firewall or proxy may be blocking it (ConnectionRefused)` when nothing answers at the address, or `Can't reach the API server — check your internet or DNS (ENOTFOUND)` when the hostname doesn't resolve, often after a silent pause while Claude Code [retries with backoff](/docs/en/errors#automatic-retries). The code in parentheses varies; [Unable to connect to API](/docs/en/errors#unable-to-connect-to-api) covers the code spellings and the earlier wording | Nothing answered at the base URL: the address is wrong, or a VPN or firewall blocks the path to the gateway | Run the [curl test above](#verify-the-connection), which fails immediately with the same cause, and confirm the URL and network path with your gateway team |
 | `API returned an empty or malformed response (HTTP 200)` | The gateway or an intermediate proxy returned a non-API response, often an HTML error or login page | Test with the [curl request above](#verify-the-connection); fix the gateway route that answers with something other than a Claude API response. [The error reference](/docs/en/errors#api-returned-an-empty-or-malformed-response) explains the detail the message reports |
-| `400` errors naming `context_management`, `Extra inputs are not permitted`, or other unrecognized fields | The gateway forwards requests to an upstream that rejects fields Claude Code sends to Anthropic-format endpoints | Set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, which suppresses most pre-release fields; see [feature pass-through](/docs/en/llm-gateway-protocol#feature-pass-through). Some betas aren't gated by this flag; for those, set the matching `CLAUDE_CODE_USE_*` provider variable so Claude Code sends only what that provider accepts |
+| `400` errors naming `context_management`, `Extra inputs are not permitted`, or other unrecognized fields | The gateway forwards requests to an upstream that rejects fields Claude Code sends to Anthropic-format endpoints | Set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, which suppresses most pre-release fields; see [feature pass-through](/docs/en/llm-gateway-protocol#feature-pass-through). Some betas aren't gated by this flag; for those, set the matching `CLAUDE_CODE_USE_*` provider variable so Claude Code sends only what that provider accepts. For steps that depend on which field the message names, see [Extra inputs are not permitted](/docs/en/errors#extra-inputs-are-not-permitted) |
 | `400` errors naming `thinking` or `adaptive`, such as `Input tag 'adaptive' found` | The upstream model build doesn't accept adaptive reasoning, which Claude Code requests for Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 5.5, Claude Fable 5, and later models | Upgrade the gateway's upstream. On Opus 4.6 and Sonnet 4.6, `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1` works instead. The [model configuration](/docs/en/model-config) capability variables apply only to the provider configurations, such as `CLAUDE_CODE_USE_BEDROCK` and `CLAUDE_CODE_USE_VERTEX`, not behind an `ANTHROPIC_BASE_URL` gateway |
 | `400` errors stating a context or token limit in the gateway's own words, such as `ContextWindowExceededError` or `prompt token count of N exceeds the limit of M` | The gateway enforces a smaller context than the model's native window and rewrites the upstream error, so Claude Code doesn't recognize it as a [too-long error](/docs/en/errors#prompt-is-too-long) and doesn't compact and retry automatically | Run `/compact` to recover the session. To prevent it, set `CLAUDE_CODE_AUTO_COMPACT_WINDOW` to the gateway's limit; Claude Code clamps the value to at least 100,000 tokens and at most the model's context window, so you can't match a gateway limit below 100,000, and `/compact` remains the recovery there. Also set `CLAUDE_CODE_MAX_OUTPUT_TOKENS` below the gateway model's output limit |
 | `400` errors on every request, in the gateway's own words rejecting a tool's input schema or its `pattern`, on Claude Code v2.1.265 through v2.1.267 | In a gradual rollout on those versions, the [Artifact tool](/docs/en/artifacts#availability) schema carries a regular expression with `\p{...}` Unicode character classes. The Anthropic API accepts it, but a gateway or upstream that checks each tool schema's `pattern` with its own regex engine rejects the whole request | Update to v2.1.268 or later, which doesn't send the regular expression. On an affected version, [turn artifacts off](/docs/en/artifacts#disable-artifacts), which removes the tool and its schema from requests |
