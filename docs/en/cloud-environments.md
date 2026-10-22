@@ -164,7 +164,7 @@ A [self-hosted environment](/docs/en/self-hosted-environments) ID, which has the
 
 ### Archive an environment
 
-To archive one of your own environments, open it for editing, select **Archive environment**, and confirm. If the environment is [shared with your organization](#organization-shared-environments), an Owner archives it from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings) instead, so ask an Owner unless you are one. You can't delete an environment, only archive it.
+To archive one of your own environments, open it for editing, then select **Archive environment** and confirm. If the environment is [shared with your organization](#organization-shared-environments), an Owner archives it from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings) instead, so ask an Owner unless you are one.
 
 Archiving affects new sessions, not running ones:
 
@@ -174,6 +174,8 @@ Archiving affects new sessions, not running ones:
 * No new session can start in an archived environment, on any surface:
   * **Saved CLI default**: if the environment was your saved [CLI default](#select-an-environment-from-the-cli), Claude Code starts CLI cloud sessions in the Anthropic-hosted environment when your list has one. Otherwise, it starts them in the first environment in your list that isn't a [Remote Control bridge environment](#the-default-environment).
   * **Configured explicitly**: anything configured with the environment explicitly, such as a [cloud scheduled task](/docs/en/routines#environments-and-network-access), can't start new sessions in it. Point it at another environment.
+
+When you no longer need an Anthropic-hosted environment, archive it. Neither the environment dialog nor the **Cloud environments** admin page has an option to delete an Anthropic-hosted environment. If the environment is [self-hosted](/docs/en/self-hosted-environments), an Owner can delete it from the **Cloud environments** page in admin settings. If you aren't an Owner, ask one to delete it.
 
 ### Organization-shared environments
 
@@ -474,7 +476,7 @@ If you have SessionStart hooks in your user-level `~/.claude/settings.json`, don
 
 ### Install dependencies with a SessionStart hook
 
-To install dependencies only in cloud sessions outside a [project](/docs/en/claude-projects#what-threads-pick-up-from-your-repositories), pair a SessionStart hook with a script that checks where it's running.
+To install dependencies only in cloud sessions outside a [project](/docs/en/claude-projects#what-threads-pick-up-from-your-repositories)'s threads, pair a SessionStart hook with a script that checks where it's running.
 
 First, add a SessionStart hook to your repo's `.claude/settings.json`. This configuration tells Claude Code to run `scripts/install_pkgs.sh` from your repository whenever a session starts or resumes:
 
